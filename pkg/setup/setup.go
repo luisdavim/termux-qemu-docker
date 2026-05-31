@@ -4,13 +4,27 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strings"
 
 	"github.com/luisdavim/termux-docker/pkg/config"
 	"gopkg.in/yaml.v3"
 )
+
+func installPkgs(packages []string) error {
+	fmt.Printf("📦 Updating system and installing packages: %s...\n", strings.Join(packages, ", "))
+
+	args := append([]string{"install", "-y"}, packages...)
+	pkgCmd := exec.Command("pkg", args...)
+	pkgCmd.Stdout = os.Stdout
+	pkgCmd.Stderr = os.Stderr
+
+	if err := pkgCmd.Run(); err != nil {
+		return fmt.Errorf("failed package requirements phase: %w", err)
+	}
+
+	return nil
+}
 
 func RunSetupEnvironment(homeDir string) error {
 	fmt.Println("⚙️ Starting automated Termux dependency verification pipeline...")
@@ -21,15 +35,8 @@ func RunSetupEnvironment(homeDir string) error {
 	}
 
 	packages := []string{"qemu-utils", fmt.Sprintf("qemu-system-%s-headless", arch), "openssh", "libisoburn", "dosfstools", "docker"}
-	fmt.Printf("📦 Updating system and installing packages: %s...\n", strings.Join(packages, ", "))
-
-	args := append([]string{"install", "-y"}, packages...)
-	pkgCmd := exec.Command("pkg", args...)
-	pkgCmd.Stdout = os.Stdout
-	pkgCmd.Stderr = os.Stderr
-
-	if err := pkgCmd.Run(); err != nil {
-		return fmt.Errorf("failed package requirements phase: %w", err)
+	if err := installPkgs(packages); err != nil {
+		return err
 	}
 	fmt.Println("✅ Package requirements step satisfied.")
 
@@ -78,11 +85,6 @@ func RunSetupEnvironment(homeDir string) error {
 		fmt.Println("✅ Default config.yaml generated matching system profile contexts.")
 	} else {
 		fmt.Println("ℹ️ An active config.yaml already exists. Skipping fabrication overrides.")
-	}
-
-	projectsDir := filepath.Join(homeDir, "projects")
-	if err := os.MkdirAll(projectsDir, 0o755); err != nil {
-		fmt.Printf("⚠️ Warning: failed to create projects directory: %v\n", err)
 	}
 
 	fmt.Println("\n🎉 Setup sequence completed successfully!")
