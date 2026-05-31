@@ -1,0 +1,202 @@
+package vm
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"net"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"text/template"
+	"time"
+
+	"github.com/luisdavim/termux-docker/pkg/config"
+	"github.com/luisdavim/termux-docker/pkg/ssh"
+	"github.com/luisdavim/termux-docker/pkg/utils"
+)
+
+func CheckAndDownloadImage(c *config.Config) error {
+	if _, err := os.Stat(c.VM.DiskPath); err == nil {
+		return nil
+	}
+
+	fmt.Printf("📂 Profile Disk allocation missing. Downloading Alpine %s cloud image...\n", c.AlpineSetup.Arch)
+	versionParts := strings.Split(c.AlpineSetup.Version, ".")
+	majorMinor := fmt.Sprintf("v%s.%s", versionParts[0], versionParts[1])
+	archSuffix := "uefi"
+	if c.AlpineSetup.Arch == "x86_64" {
+		archSuffix = "bios"
+	}
+	downloadURL := fmt.Sprintf("%s/%s/releases/cloud/nocloud_alpine-%s-%s-%s-cloudinit-r0.qcow2",
+		c.AlpineSetup.Mirror, majorMinor, c.AlpineSetup.Version, c.AlpineSetup.Arch, archSuffix)
+
+	tempPath := c.VM.DiskPath + ".tmp"
+	if err := utils.DownloadFile(downloadURL, tempPath); err != nil {
+		if remErr := os.Remove(tempPath); remErr != nil && !os.IsNotExist(remErr) {
+			fmt.Printf("⚠️ Warning: failed to remove temporary download file: %v\n", remErr)
+		}
+		return fmt.Errorf("download failed: %v", err)
+	}
+
+	if err := os.Rename(tempPath, c.VM.DiskPath); err != nil {
+		return err
+	}
+
+	fmt.Printf("📦 Resizing disk to %dGB...\n", c.VM.DiskSizeGB)
+	cmd := exec.Command("qemu-img", "resize", c.VM.DiskPath, fmt.Sprintf("%dG", c.VM.DiskSizeGB))
+	return cmd.Run()
+}
+
+func CreateSeedISO(s *config.State) (string, error) {
+	tempDir, err := os.MkdirTemp("", "termux-docker-seed-*")
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
+	tmpl, err := template.New("user-data").Parse(userDataTemplate)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse user-data template: %w", err)
+	}
+
+	keyPath := ssh.GetKeyPath(s.HomeDir)
+	pubKeyPath := ssh.GetPublicKeyPath(s.HomeDir)
+	if _, err := os.Stat(keyPath); os.IsNotExist(err) {
+		fmt.Println("🔑 Generating new SSH key pair for VM access...")
+		if err := ssh.MakeKeyPair(pubKeyPath, keyPath); err != nil {
+			return "", fmt.Errorf("failed to generate SSH key pair: %w", err)
+		}
+	}
+
+	pubKeyBytes, err := os.ReadFile(pubKeyPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read public key: %w", err)
+	}
+
+	hashedPassword, err := utils.EncryptPassword(s.Cfg.VM.SSHPassword)
+	if err != nil {
+		return "", err
+	}
+
+	var userData bytes.Buffer
+	data := struct {
+		ProfileName string
+		SSHUser     string
+		SSHPassword string
+		PublicKey   string
+	}{
+		ProfileName: s.Profile,
+		SSHUser:     s.Cfg.VM.SSHUser,
+		SSHPassword: hashedPassword,
+		PublicKey:   strings.TrimSpace(string(pubKeyBytes)),
+	}
+
+	if err := tmpl.Execute(&userData, data); err != nil {
+		return "", fmt.Errorf("failed to execute user-data template: %w", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(tempDir, "user-data"), userData.Bytes(), 0o644); err != nil {
+		return "", err
+	}
+	if err := os.WriteFile(filepath.Join(tempDir, "meta-data"), []byte("instance-id: "+s.Profile), 0o644); err != nil {
+		return "", err
+	}
+
+	isoPath := s.GetSeedISOPath()
+	_ = os.MkdirAll(filepath.Dir(isoPath), 0o755)
+
+	cmd := exec.Command("xorrisofs", "-output", isoPath, "-volid", "cidata", "-joliet", "-rock",
+		filepath.Join(tempDir, "user-data"), filepath.Join(tempDir, "meta-data"))
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+	return isoPath, nil
+}
+
+func VerifyDockerHealth(s *config.State) bool {
+	httpClient := http.Client{
+		Timeout: 5 * time.Second,
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+				var dialer net.Dialer
+				return dialer.DialContext(ctx, "unix", s.GetDockerSocketPath())
+			},
+		},
+	}
+
+	for i := range 30 {
+		time.Sleep(5 * time.Second)
+		resp, err := httpClient.Get("http://localhost/_ping")
+		if err == nil && resp.StatusCode == http.StatusOK {
+			return true
+		}
+		fmt.Printf("... checking Docker health (attempt %d/30)\n", i+1)
+	}
+	return false
+}
+
+func OrchestrateEnvironment(ctx context.Context, s *config.State) {
+	fmt.Println("⏳ Synchronizing network handshake channels...")
+
+	client, err := ssh.GetClient(ctx, s.Cfg, s.HomeDir)
+	if err != nil {
+		fmt.Printf("❌ Connection failed: %v\n", err)
+		return
+	}
+	defer func() { _ = client.Close() }()
+
+	fmt.Println("⏳ Waiting for cloud-init...")
+	if err := ssh.RunCommand(client, "cloud-init status --wait"); err != nil {
+		fmt.Printf("⚠️ Warning: cloud-init status check failed: %v\n", err)
+	}
+
+	if len(s.Cfg.Provision.Commands) != 0 {
+		provisioned := false
+		if err := ssh.RunCommand(client, "sudo test -f /.provisioned"); err == nil {
+			provisioned = true
+		}
+
+		if !provisioned {
+			fmt.Println("🔐 Injecting runtime framework modules...")
+			for _, command := range s.Cfg.Provision.Commands {
+				if err := ssh.RunCommand(client, command); err != nil {
+					fmt.Printf("⚠️ Provisioning command failed: %s (%v)\n", command, err)
+				}
+			}
+			if err := ssh.RunCommand(client, "sudo touch /.provisioned"); err != nil {
+				fmt.Printf("⚠️ Failed to mark VM as provisioned: %v\n", err)
+			}
+		} else {
+			fmt.Println("ℹ️ VM already provisioned. Skipping initial setup steps.")
+		}
+	}
+
+	fmt.Println("📁 Syncing remote storage partition mounts...")
+	for i, m := range s.Cfg.Mounts {
+		tag := fmt.Sprintf("mount%d", i)
+		if err := ssh.RunCommand(client, fmt.Sprintf("sudo mkdir -p %s", m)); err != nil {
+			fmt.Printf("⚠️ Failed to create mount directory %s: %v\n", m, err)
+			continue
+		}
+		if err := ssh.RunCommand(client, fmt.Sprintf("sudo chown -R %s:docker %s", s.Cfg.VM.SSHUser, m)); err != nil {
+			fmt.Printf("⚠️ Failed to set ownership on %s: %v\n", m, err)
+		}
+		if err := ssh.RunCommand(client, fmt.Sprintf("sudo chmod 775 %s", m)); err != nil {
+			fmt.Printf("⚠️ Failed to set permissions on %s: %v\n", m, err)
+		}
+
+		// Check if already mounted to avoid errors
+		checkCmd := fmt.Sprintf("mount | grep -q 'on %s type 9p'", m)
+		if err := ssh.RunCommand(client, checkCmd); err != nil {
+			mountCmd := fmt.Sprintf("sudo mount -t 9p -o trans=virtio,version=9p2000.L,_netdev,rw,access=any %s %s", tag, m)
+			if err := ssh.RunCommand(client, mountCmd); err != nil {
+				fmt.Printf("⚠️ Mount failed for %s: %v\n", m, err)
+			}
+		}
+	}
+
+	fmt.Println("🚀 Orchestration complete. Spawning background tunnel...")
+}

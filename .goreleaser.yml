@@ -1,0 +1,56 @@
+---
+# This is an example .goreleaser.yml file with some sane defaults.
+# Make sure to check the documentation at http://goreleaser.com
+project_name: termux-docker
+version: 2
+before:
+  hooks:
+    - go vet ./...
+    - go test -v -race ./...
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+    # you may remove this if you don't need go generate
+    - go generate ./...
+builds:
+  - env:
+      - CGO_ENABLED=0
+    ldflags: -s -w -extldflags "-static"
+    flags:
+      - -trimpath
+    goos:
+      - android
+archives:
+  - name_template: >-
+      {{ .ProjectName }}_
+      {{- if eq .Os "Darwin" }}macos_
+      {{- else }}{{- tolower .Os }}_{{end}}
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+brews:
+  - name: termux-docker
+    repository:
+      owner: luisdavim
+      name: termux-docker
+      branch: main
+    directory: Formula
+    description: "Watch a command and generate diffs from the output changes"
+    homepage: "https://github.com/luisdavim/termux-docker"
+    license: "MIT"
+    download_strategy: CurlDownloadStrategy
+    install: |
+      bin.install "termux-docker"
+    test: |
+      system "#{bin}/termux-docker", "-h"
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
