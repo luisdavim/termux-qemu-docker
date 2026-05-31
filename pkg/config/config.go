@@ -89,7 +89,6 @@ func (c *Config) SetDefaults(profile string, homeDir string) {
 		if c.VM.DockerPort == 0 {
 			c.VM.DockerPort = 2375
 		}
-
 	}
 
 	if c.AlpineSetup.Version == "" {

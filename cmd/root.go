@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/luisdavim/termux-docker/pkg/config"
 	"github.com/spf13/cobra"
+
+	"github.com/luisdavim/termux-docker/pkg/config"
 )
 
 func NewRootCmd(homeDir string) *cobra.Command {
@@ -39,6 +40,7 @@ func NewRootCmd(homeDir string) *cobra.Command {
 	rootCmd.AddCommand(newDeleteCmd(state))
 	rootCmd.AddCommand(newTunnelCmd(state))
 	rootCmd.AddCommand(newLogsCmd(state))
+	rootCmd.AddCommand(newSSHCmd(state))
 
 	return rootCmd
 }

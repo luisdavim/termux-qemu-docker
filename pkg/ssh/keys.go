@@ -8,8 +8,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/luisdavim/termux-docker/pkg/config"
 	"golang.org/x/crypto/ssh"
+
+	"github.com/luisdavim/termux-docker/pkg/config"
 )
 
 func GetKeyPath(homeDir string) string {

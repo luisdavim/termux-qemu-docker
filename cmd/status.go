@@ -6,14 +6,16 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/luisdavim/termux-docker/pkg/config"
 	"github.com/spf13/cobra"
+
+	"github.com/luisdavim/termux-docker/pkg/config"
 )
 
 func newStatusCmd(state *config.State) *cobra.Command {
 	return &cobra.Command{
-		Use:   "status",
-		Short: "Display the current operational state of a profile",
+		Use:     "status",
+		Aliases: []string{"state"},
+		Short:   "Display the current operational state of a profile",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return showStatus(state)
 		},

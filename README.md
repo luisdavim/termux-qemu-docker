@@ -32,12 +32,12 @@ Before starting, ensure you have a modern Android device with Termux installed. 
 2. **Run the automated setup**:
    This installs dependencies and generates a default `config.yaml`.
    ```bash
-   ./termux-docker setup
+   termux-docker setup
    ```
 
 3. **Start the VM**:
    ```bash
-   ./termux-docker start
+   termux-docker start
    ```
 
 ## 🐳 Using Docker
@@ -78,32 +78,32 @@ The tool also automatically attempts to mount the Termux `$PREFIX/tmp` directory
 ### Profile Management
 Create separate environments using the `-p` or `--profile` flag:
 ```bash
-./termux-docker -p web-dev start
-./termux-docker -p database start
-./termux-docker list
+termux-docker -p web-dev start
+termux-docker -p database start
+termux-docker list
 ```
 Each profile gets its own disk image, unique SSH port, and dedicated Docker TCP port.
 
 ### Configuration Overrides
 You can override resources during start, and they will be saved to your profile's config:
 ```bash
-./termux-docker start --cpus 4 --memory 4096 --disk 20
+termux-docker start --cpus 4 --memory 4096 --disk 20
 ```
 
 ## 🛑 Stopping & Deleting
 
 To gracefully shut down the VM:
 ```bash
-./termux-docker stop
+termux-docker stop
 # Or for a specific profile
-./termux-docker -p web-dev stop
+termux-docker -p web-dev stop
 ```
 
 To completely remove a profile and its disk image:
 ```bash
-./termux-docker delete
+termux-docker delete
 # Or for a specific profile
-./termux-docker -p web-dev delete
+termux-docker -p web-dev delete
 ```
 
 ## 🛡️ Security

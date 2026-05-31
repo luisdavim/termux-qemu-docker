@@ -7,8 +7,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/luisdavim/termux-docker/pkg/config"
 	"gopkg.in/yaml.v3"
+
+	"github.com/luisdavim/termux-docker/pkg/config"
 )
 
 func installPkgs(packages []string) error {

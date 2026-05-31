@@ -5,8 +5,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/luisdavim/termux-docker/pkg/config"
 	"github.com/spf13/cobra"
+
+	"github.com/luisdavim/termux-docker/pkg/config"
 )
 
 func newLogsCmd(state *config.State) *cobra.Command {

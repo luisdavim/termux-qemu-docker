@@ -9,8 +9,9 @@ import (
 
 func newListCmd(state *config.State) *cobra.Command {
 	return &cobra.Command{
-		Use:   "list",
-		Short: "List all available profiles and their statuses",
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List all available profiles and their statuses",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return profiles.List(state)
 		},
