@@ -95,7 +95,7 @@ func StartTunnel(state *config.State, interval time.Duration) error {
 			// Clean up closed ports
 			for port := range activeListeners {
 				if !ports[port] {
-					fmt.Printf("[-] Stopped forwarding port: %s -> VM Port %s\n", localAddr, port)
+					fmt.Printf("[-] Stopped forwarding port: %s\n", port)
 					_ = activeListeners[port].Close()
 					delete(activeListeners, port)
 				}
