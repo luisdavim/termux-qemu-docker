@@ -77,7 +77,7 @@ func Shell(s *config.State) error {
 	if err != nil {
 		return fmt.Errorf("failed to set raw mode: %w", err)
 	}
-	defer term.Restore(fd, oldState)
+	defer func() { _ = term.Restore(fd, oldState) }()
 
 	width, height, err := term.GetSize(fd)
 	if err != nil {
