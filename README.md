@@ -110,6 +110,3 @@ To completely remove a profile and its disk image:
 - **Isolation**: Containers run inside a dedicated VM, providing a layer of security between Docker and your Android OS.
 - **Encapsulation**: Remote commands use escaped shell arguments to prevent injection.
 - **Lifecycle**: Resource allocation and port listeners are context-bound and shut down automatically with the VM.
-
-## 📄 License
-MIT
