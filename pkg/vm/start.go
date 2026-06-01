@@ -27,6 +27,10 @@ func Start(s *config.State) error {
 		return fmt.Errorf("cloud-init setup failed: %w", err)
 	}
 
+	if err := StartQEMU(s, seedISO); err != nil {
+		return err
+	}
+
 	fmt.Printf("🌀 Spawning isolated profile namespace [%s] (%d Cores, %sMB RAM)...\n", s.Profile, c.VM.CPUs, c.VM.Memory)
 
 	if _, err := strconv.Atoi(c.VM.Memory); err != nil {
@@ -38,16 +42,46 @@ func Start(s *config.State) error {
 		return fmt.Errorf("failed to create socket directory: %w", err)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	OrchestrateEnvironment(ctx, s)
+
+	if err := startTunnel(s); err != nil {
+		return fmt.Errorf("failed to start portforward tunnel: %w", err)
+	}
+
+	fmt.Println("🩺 Running Docker daemon framework availability health checks...")
+	if VerifyDockerHealth(s) {
+		fmt.Printf("\n✅ Profile context '%s' initialized and healthy!\n", s.Profile)
+		fmt.Println("👉 Execute this declaration statement locally to connect your shell:")
+		fmt.Printf(" export DOCKER_HOST=unix://%s\n", s.GetDockerSocketPath())
+		fmt.Println("  or:")
+		fmt.Printf(" export DOCKER_HOST=http://127.0.0.1:%d\n\n", c.VM.DockerPort)
+	} else {
+		_ = Stop(s)
+		return fmt.Errorf("health diagnostic failed. Docker daemon may still be starting or misconfigured")
+	}
+
+	return nil
+}
+
+func getQEMUCmd(s *config.State) string {
+	return fmt.Sprintf("qemu-system-%s", s.Cfg.AlpineSetup.Arch)
+}
+
+func StartQEMU(s *config.State, seedISO string) error {
+	prefix := os.Getenv("TERMUX__PREFIX")
 	args := []string{
-		"-M", "virt", "-cpu", "max", "-smp", strconv.Itoa(c.VM.CPUs), "-m", c.VM.Memory,
-		"-bios", fmt.Sprintf("/data/data/com.termux/files/usr/share/qemu/edk2-%s-code.fd", c.AlpineSetup.Arch),
-		"-drive", fmt.Sprintf("if=virtio,file=%s,format=qcow2", c.VM.DiskPath),
+		"-M", "virt", "-cpu", "max", "-smp", strconv.Itoa(s.Cfg.VM.CPUs), "-m", s.Cfg.VM.Memory,
+		"-bios", fmt.Sprintf(filepath.Join(prefix, "/share/qemu/edk2-%s-code.fd"), s.Cfg.AlpineSetup.Arch),
+		"-drive", fmt.Sprintf("if=virtio,file=%s,format=qcow2", s.Cfg.VM.DiskPath),
 		"-drive", fmt.Sprintf("if=virtio,file=%s,format=raw,readonly=on", seedISO),
-		"-netdev", fmt.Sprintf("user,id=n1,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2375", c.VM.SSHPort, c.VM.DockerPort),
+		"-netdev", fmt.Sprintf("user,id=n1,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2375", s.Cfg.VM.SSHPort, s.Cfg.VM.DockerPort),
 		"-device", "virtio-net-pci,netdev=n1", "-nographic",
 	}
 
-	for i, m := range c.Mounts {
+	for i, m := range s.Cfg.Mounts {
 		if err := os.MkdirAll(m, 0o755); err != nil {
 			fmt.Printf("⚠️ Warning: failed to create host mount directory %s: %v\n", m, err)
 		}
@@ -64,7 +98,7 @@ func Start(s *config.State) error {
 		return fmt.Errorf("failed to open QEMU log file: %w", err)
 	}
 
-	qemuCmd := exec.Command(fmt.Sprintf("qemu-system-%s", c.AlpineSetup.Arch), args...)
+	qemuCmd := exec.Command(getQEMUCmd(s), args...)
 	qemuCmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	qemuCmd.Stdout, qemuCmd.Stderr = qemuLog, qemuLog
 
@@ -87,27 +121,7 @@ func Start(s *config.State) error {
 	}
 
 	fmt.Printf("🚀 QEMU process started (PID: %d). Orchestrating environment...\n", qemuCmd.Process.Pid)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	OrchestrateEnvironment(ctx, s)
-
-	if err := startTunnel(s); err != nil {
-		return fmt.Errorf("failed to start portforward tunnel: %w", err)
-	}
-
-	fmt.Println("🩺 Running Docker daemon framework availability health checks...")
-	if VerifyDockerHealth(s) {
-		fmt.Printf("\n✅ Profile context '%s' initialized and healthy!\n", s.Profile)
-		fmt.Println("👉 Execute this declaration statement locally to connect your shell:")
-		fmt.Printf(" export DOCKER_HOST=unix://%s\n", s.GetDockerSocketPath())
-		fmt.Println("  or:")
-		fmt.Printf(" export DOCKER_HOST=http://127.0.0.1:%d\n\n", c.VM.DockerPort)
-		startupSuccessful = true
-	} else {
-		return fmt.Errorf("health diagnostic failed. Docker daemon may still be starting or misconfigured")
-	}
+	startupSuccessful = true
 
 	return nil
 }

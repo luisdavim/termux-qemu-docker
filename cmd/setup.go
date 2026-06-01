@@ -8,12 +8,18 @@ import (
 )
 
 func newSetupCmd(state *config.State) *cobra.Command {
-	return &cobra.Command{
+	var arch string
+
+	cmd := &cobra.Command{
 		Use:   "setup",
 		Short: "Install required dependencies and generate baseline configurations",
-		Long:  `Automatically installs qemu-utils, qemu-system-aarch64-headless, and openssh via pkg, verifies BIOS locations, and writes a default config.yaml file if missing.`,
+		Long:  `Automatically installs qemu, and openssh via pkg, verifies BIOS locations, and writes a default config.yaml file if missing.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return setup.RunSetupEnvironment(state.HomeDir)
+			return setup.RunSetupEnvironment(state.HomeDir, arch)
 		},
 	}
+
+	cmd.Flags().StringVarP(&arch, "arch", "a", "", "QEMU architecture")
+
+	return cmd
 }

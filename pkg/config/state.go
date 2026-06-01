@@ -9,10 +9,6 @@ type State struct {
 	Profile string
 	HomeDir string
 	Cfg     *Config
-
-	CPUs   int
-	Memory string
-	Disk   int
 }
 
 func (s *State) GetSeedISOPath() string {

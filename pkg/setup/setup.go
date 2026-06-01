@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -27,12 +28,15 @@ func installPkgs(packages []string) error {
 	return nil
 }
 
-func RunSetupEnvironment(homeDir string) error {
+func RunSetupEnvironment(homeDir, arch string) error {
+	prefix := os.Getenv("TERMUX__PREFIX")
 	fmt.Println("⚙️ Starting automated Termux dependency verification pipeline...")
 
-	arch := "aarch64"
-	if runtime.GOARCH == "amd64" {
-		arch = "x86_64"
+	if arch == "" {
+		arch = "aarch64"
+		if runtime.GOARCH == "amd64" {
+			arch = "x86_64"
+		}
 	}
 
 	packages := []string{"qemu-utils", fmt.Sprintf("qemu-system-%s-headless", arch), "openssh", "libisoburn", "dosfstools", "docker"}
@@ -42,8 +46,7 @@ func RunSetupEnvironment(homeDir string) error {
 	fmt.Println("✅ Package requirements step satisfied.")
 
 	biosPaths := []string{
-		"/data/data/com.termux/files/usr/share/qemu/edk2-aarch64-code.fd",
-		"/data/data/com.termux/files/usr/share/qemu/edk2-x86_64-code.fd",
+		filepath.Join(prefix, fmt.Sprintf("/share/qemu/edk2-%s-code.fd", arch)),
 	}
 
 	biosFound := false
