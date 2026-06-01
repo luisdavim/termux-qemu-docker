@@ -23,7 +23,7 @@ func CheckAndDownloadImage(c *config.Config) error {
 		return nil
 	}
 
-	fmt.Printf("📂 Profile Disk allocation missing. Downloading Alpine %s cloud image...\n", c.AlpineSetup.Arch)
+	fmt.Printf("📂 Profile Disk allocation missing. Downloading Alpine %s %s cloud image...\n", c.AlpineSetup.Version, c.AlpineSetup.Arch)
 	versionParts := strings.Split(c.AlpineSetup.Version, ".")
 	majorMinor := fmt.Sprintf("v%s.%s", versionParts[0], versionParts[1])
 	archSuffix := "uefi"
