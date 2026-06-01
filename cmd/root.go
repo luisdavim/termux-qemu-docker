@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 
 	"github.com/luisdavim/termux-docker/pkg/config"
@@ -19,12 +21,14 @@ func NewRootCmd(homeDir string) *cobra.Command {
 				return nil
 			}
 
+			state.Prefix = os.Getenv("TERMUX__PREFIX")
+
 			var err error
 			state.Cfg, err = config.LoadConfig(state.Profile, state.HomeDir)
 			if err != nil {
-				state.Cfg = config.NewDefaultConfig(state.Profile, state.HomeDir)
+				state.Cfg = config.NewDefaultConfig(state.Profile, state.HomeDir, state.Prefix)
 			} else {
-				state.Cfg.SetDefaults(state.Profile, state.HomeDir)
+				state.Cfg.SetDefaults(state.Profile, state.HomeDir, state.Prefix)
 			}
 			return nil
 		},

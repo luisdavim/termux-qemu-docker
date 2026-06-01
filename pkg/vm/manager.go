@@ -57,11 +57,6 @@ func CreateSeedISO(s *config.State) (string, error) {
 	}
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
-	tmpl, err := template.New("user-data").Parse(userDataTemplate)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse user-data template: %w", err)
-	}
-
 	keyPath := ssh.GetKeyPath(s.HomeDir)
 	pubKeyPath := ssh.GetPublicKeyPath(s.HomeDir)
 	if _, err := os.Stat(keyPath); os.IsNotExist(err) {
@@ -94,11 +89,18 @@ func CreateSeedISO(s *config.State) (string, error) {
 		PublicKey:   strings.TrimSpace(string(pubKeyBytes)),
 	}
 
+	tmpl, err := template.New("user-data").Parse(userDataTemplate)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse user-data template: %w", err)
+	}
 	if err := tmpl.Execute(&userData, data); err != nil {
 		return "", fmt.Errorf("failed to execute user-data template: %w", err)
 	}
 
 	if err := os.WriteFile(filepath.Join(tempDir, "user-data"), userData.Bytes(), 0o644); err != nil {
+		return "", err
+	}
+	if err := os.WriteFile(filepath.Join(tempDir, "vendor-data"), []byte(vendorDataTemplate), 0o644); err != nil {
 		return "", err
 	}
 	if err := os.WriteFile(filepath.Join(tempDir, "meta-data"), []byte("instance-id: "+s.Profile), 0o644); err != nil {
@@ -109,7 +111,7 @@ func CreateSeedISO(s *config.State) (string, error) {
 	_ = os.MkdirAll(filepath.Dir(isoPath), 0o755)
 
 	cmd := exec.Command("xorrisofs", "-output", isoPath, "-volid", "cidata", "-joliet", "-rock",
-		filepath.Join(tempDir, "user-data"), filepath.Join(tempDir, "meta-data"))
+		filepath.Join(tempDir, "user-data"), filepath.Join(tempDir, "meta-data"), filepath.Join(tempDir, "vendor-data"))
 	if err := cmd.Run(); err != nil {
 		return "", err
 	}
@@ -155,7 +157,7 @@ func OrchestrateEnvironment(ctx context.Context, s *config.State) {
 
 	if len(s.Cfg.Provision.Commands) != 0 {
 		provisioned := false
-		if err := ssh.RunCommand(client, "sudo test -f /.provisioned"); err == nil {
+		if err := ssh.RunCommand(client, "doas test -f /.provisioned"); err == nil {
 			provisioned = true
 		}
 
@@ -166,7 +168,7 @@ func OrchestrateEnvironment(ctx context.Context, s *config.State) {
 					fmt.Printf("⚠️ Provisioning command failed: %s (%v)\n", command, err)
 				}
 			}
-			if err := ssh.RunCommand(client, "sudo touch /.provisioned"); err != nil {
+			if err := ssh.RunCommand(client, "doas touch /.provisioned"); err != nil {
 				fmt.Printf("⚠️ Failed to mark VM as provisioned: %v\n", err)
 			}
 		} else {
@@ -177,21 +179,21 @@ func OrchestrateEnvironment(ctx context.Context, s *config.State) {
 	fmt.Println("📁 Syncing remote storage partition mounts...")
 	for i, m := range s.Cfg.Mounts {
 		tag := fmt.Sprintf("mount%d", i)
-		if err := ssh.RunCommand(client, fmt.Sprintf("sudo mkdir -p %s", m)); err != nil {
+		if err := ssh.RunCommand(client, fmt.Sprintf("doas mkdir -p %s", m)); err != nil {
 			fmt.Printf("⚠️ Failed to create mount directory %s: %v\n", m, err)
 			continue
 		}
-		if err := ssh.RunCommand(client, fmt.Sprintf("sudo chown -R %s:docker %s", s.Cfg.VM.SSHUser, m)); err != nil {
+		if err := ssh.RunCommand(client, fmt.Sprintf("doas chown -R %s:docker %s", s.Cfg.VM.SSHUser, m)); err != nil {
 			fmt.Printf("⚠️ Failed to set ownership on %s: %v\n", m, err)
 		}
-		if err := ssh.RunCommand(client, fmt.Sprintf("sudo chmod 775 %s", m)); err != nil {
+		if err := ssh.RunCommand(client, fmt.Sprintf("doas chmod 775 %s", m)); err != nil {
 			fmt.Printf("⚠️ Failed to set permissions on %s: %v\n", m, err)
 		}
 
 		// Check if already mounted to avoid errors
 		checkCmd := fmt.Sprintf("mount | grep -q 'on %s type 9p'", m)
 		if err := ssh.RunCommand(client, checkCmd); err != nil {
-			mountCmd := fmt.Sprintf("sudo mount -t 9p -o trans=virtio,version=9p2000.L,_netdev,rw,access=any %s %s", tag, m)
+			mountCmd := fmt.Sprintf("doas mount -t 9p -o trans=virtio,version=9p2000.L,_netdev,rw,access=any %s %s", tag, m)
 			if err := ssh.RunCommand(client, mountCmd); err != nil {
 				fmt.Printf("⚠️ Mount failed for %s: %v\n", m, err)
 			}

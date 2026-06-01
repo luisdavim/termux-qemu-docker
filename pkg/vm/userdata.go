@@ -11,7 +11,8 @@ users:
     passwd: "{{.SSHPassword}}"
     lock_passwd: false
     groups: [docker, wheel]
-    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    doas:
+      - "permit nopass {{ .SSHUser }} as root"
     shell: /bin/ash
     ssh_authorized_keys:
       - {{.PublicKey}}
@@ -29,7 +30,6 @@ write_files:
 # package_reboot_if_required: true
 # # package_reboot: true
 packages:
-  - sudo
   - docker
   - socat
   - mount
@@ -38,11 +38,8 @@ packages:
 
 runcmd:
   - |
-    # Add the user to the docker group
-    addgroup "{{.SSHUser}}" docker
-    chown -R {{ .SSHUser }}:{{ .SSHUser }} /home/{{.SSHUser}}
-    chmod 755 /home/{{ .SSHUser }}
-    chmod 700 /home/{{ .SSHUser }}/.ssh
+    # Enable parallel service booting in OpenRC
+    # sed -i 's/#rc_parallel="NO"/rc_parallel="YES"/g' /etc/rc.conf
 
     # Register OpenRC boot processes
     rc-update add cgroups default
@@ -59,4 +56,8 @@ runcmd:
     sed -i 's/AllowTcpForwarding no/AllowTcpForwarding yes/g' /etc/ssh/sshd_config
     grep -q "^AllowTcpForwarding yes" /etc/ssh/sshd_config || echo "AllowTcpForwarding yes" >> /etc/ssh/sshd_config
     rc-service sshd reload
+
+    chown -R {{ .SSHUser }}:{{ .SSHUser }} /home/{{.SSHUser}}
+    chmod 755 /home/{{ .SSHUser }}
+    chmod 700 /home/{{ .SSHUser }}/.ssh
 `

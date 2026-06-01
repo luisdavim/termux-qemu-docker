@@ -28,8 +28,7 @@ func installPkgs(packages []string) error {
 	return nil
 }
 
-func RunSetupEnvironment(homeDir, arch string) error {
-	prefix := os.Getenv("TERMUX__PREFIX")
+func RunSetupEnvironment(prefix, homeDir, arch string) error {
 	fmt.Println("⚙️ Starting automated Termux dependency verification pipeline...")
 
 	if arch == "" {
@@ -75,7 +74,7 @@ func RunSetupEnvironment(homeDir, arch string) error {
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
 		fmt.Println("📝 Default config.yaml absent. Materializing template framework mapping variables...")
 
-		baseCfg := config.NewDefaultConfig("default", homeDir)
+		baseCfg := config.NewDefaultConfig("default", homeDir, prefix)
 		baseCfg.Termux.SSHUser = termuxUser
 
 		yamlData, err := yaml.Marshal(baseCfg)

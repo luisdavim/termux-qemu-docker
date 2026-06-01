@@ -15,7 +15,7 @@ func newSetupCmd(state *config.State) *cobra.Command {
 		Short: "Install required dependencies and generate baseline configurations",
 		Long:  `Automatically installs qemu, and openssh via pkg, verifies BIOS locations, and writes a default config.yaml file if missing.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return setup.RunSetupEnvironment(state.HomeDir, arch)
+			return setup.RunSetupEnvironment(state.Prefix, state.HomeDir, arch)
 		},
 	}
 

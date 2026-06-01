@@ -67,9 +67,9 @@ func List(state *config.State) error {
 
 		pCfg, err := config.LoadConfig(p, state.HomeDir)
 		if err != nil {
-			pCfg = config.NewDefaultConfig(p, state.HomeDir)
+			pCfg = config.NewDefaultConfig(p, state.HomeDir, state.Prefix)
 		} else {
-			pCfg.SetDefaults(p, state.HomeDir)
+			pCfg.SetDefaults(p, state.HomeDir, state.Prefix)
 		}
 
 		portsStr := fmt.Sprintf("SSH:127.0.0.1:%d, Docker:127.0.0.1:%d", pCfg.VM.SSHPort, pCfg.VM.DockerPort)

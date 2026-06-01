@@ -40,13 +40,13 @@ type Config struct {
 	} `yaml:"provision"`
 }
 
-func NewDefaultConfig(profile string, homeDir string) *Config {
+func NewDefaultConfig(profile, homeDir, prefix string) *Config {
 	c := &Config{}
-	c.SetDefaults(profile, homeDir)
+	c.SetDefaults(profile, homeDir, prefix)
 	return c
 }
 
-func (c *Config) SetDefaults(profile string, homeDir string) {
+func (c *Config) SetDefaults(profile, homeDir, prefix string) {
 	if c.VM.CPUs == 0 {
 		c.VM.CPUs = 2
 	}
@@ -110,9 +110,7 @@ func (c *Config) SetDefaults(profile string, homeDir string) {
 
 	if len(c.Mounts) == 0 {
 		c.Mounts = []string{filepath.Join(homeDir)}
-		if prefix := os.Getenv("TERMUX__PREFIX"); prefix != "" {
-			c.Mounts = append(c.Mounts, filepath.Join(prefix, "tmp"))
-		}
+		c.Mounts = append(c.Mounts, filepath.Join(prefix, "/tmp"))
 	}
 }
 

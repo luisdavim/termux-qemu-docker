@@ -8,6 +8,7 @@ import (
 type State struct {
 	Profile string
 	HomeDir string
+	Prefix  string
 	Cfg     *Config
 }
 
