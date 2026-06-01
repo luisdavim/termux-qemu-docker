@@ -32,12 +32,12 @@ func newPortsCmd(state *config.State) *cobra.Command {
 
 			fmt.Printf("ACTIVE PORT MAPPINGS [Profile: %s]\n\n", state.Profile)
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0)
-			fmt.Fprintln(w, "LOCAL ADDRESS\tVM ADDRESS\tSTATUS")
+			_, _ = fmt.Fprintln(w, "LOCAL ADDRESS\tVM ADDRESS\tSTATUS")
 
 			for _, m := range portState.Mappings {
-				fmt.Fprintf(w, "%s\t%s\t%s\n", m.LocalAddress, m.VMAddress, m.Status)
+				_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n", m.LocalAddress, m.VMAddress, m.Status)
 			}
-			w.Flush()
+			_ = w.Flush()
 
 			return nil
 		},
