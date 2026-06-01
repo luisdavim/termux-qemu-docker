@@ -3,7 +3,6 @@ package profiles
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/luisdavim/termux-docker/pkg/config"
 	"github.com/luisdavim/termux-docker/pkg/vm"
@@ -42,6 +41,15 @@ func Delete(state *config.State) error {
 		}
 	}
 
+	// Delete SSH hosk key
+	hostKey := state.GetSSHHostKeyFile()
+	if _, err := os.Stat(hostKey); err == nil {
+		fmt.Printf("🗑️ Deleting SSH host key: %s\n", hostKey)
+		if err := os.Remove(hostKey); err != nil {
+			fmt.Printf("❌ Failed to delete SSH host key: %v\n", err)
+		}
+	}
+
 	// Delete QEMU log
 	qemuLog := state.GetLogPath()
 	if _, err := os.Stat(qemuLog); err == nil {
@@ -57,16 +65,6 @@ func Delete(state *config.State) error {
 		fmt.Printf("🗑️ Deleting Tunnel log: %s\n", tunnelLog)
 		if err := os.Remove(tunnelLog); err != nil {
 			fmt.Printf("❌ Failed to delete tunnel log: %v\n", err)
-		}
-	}
-
-	// Clean up empty socket directory for non-default profiles
-	if state.Profile != "default" && state.Profile != "" {
-		socketDir := filepath.Join(state.HomeDir, ".docker", state.Profile)
-		if entries, err := os.ReadDir(socketDir); err == nil && len(entries) == 0 {
-			if err := os.Remove(socketDir); err != nil {
-				fmt.Printf("❌ Failed to remove empty socket directory: %v\n", err)
-			}
 		}
 	}
 

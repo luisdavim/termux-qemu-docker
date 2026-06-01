@@ -3,6 +3,7 @@ package ssh
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"time"
 
@@ -12,25 +13,70 @@ import (
 	"github.com/luisdavim/termux-docker/pkg/config"
 )
 
-func GetClient(ctx context.Context, c *config.Config, homeDir string) (*ssh.Client, error) {
+func getSSHHostKey(s *config.State, key ssh.PublicKey) ([]byte, error) {
+	if len(s.SSHHostKey) != 0 {
+		return s.SSHHostKey, nil
+	}
+
+	keyPath := s.GetSSHHostKeyFile()
+	if _, err := os.Stat(keyPath); os.IsNotExist(err) {
+		keyData := ssh.MarshalAuthorizedKey(key)
+		err := os.WriteFile(keyPath, keyData, 0o600)
+		if err != nil {
+			return nil, fmt.Errorf("failed to save host key: %w", err)
+		}
+		s.SSHHostKey = keyData
+		return keyData, nil
+	}
+
+	var err error
+	s.SSHHostKey, err = os.ReadFile(keyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.SSHHostKey, nil
+}
+
+func hostKeyCallback(s *config.State) ssh.HostKeyCallback {
+	return func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+		trustedKeyBytes, err := getSSHHostKey(s, key)
+		if err != nil {
+			return err
+		}
+
+		trustedKey, _, _, _, err := ssh.ParseAuthorizedKey(trustedKeyBytes)
+		if err != nil {
+			return err
+		}
+
+		if ssh.FingerprintSHA256(key) != ssh.FingerprintSHA256(trustedKey) {
+			return fmt.Errorf("SECURITY ALERT: Host key mismatch for %s", s.Profile)
+		}
+
+		return nil
+	}
+}
+
+func GetClient(ctx context.Context, s *config.State) (*ssh.Client, error) {
 	var authMethods []ssh.AuthMethod
 
-	keyPath := GetKeyPath(homeDir)
+	keyPath := GetKeyPath(s.HomeDir)
 	if keyBytes, err := os.ReadFile(keyPath); err == nil {
 		if signer, err := ssh.ParsePrivateKey(keyBytes); err == nil {
 			authMethods = append(authMethods, ssh.PublicKeys(signer))
 		}
 	}
-	authMethods = append(authMethods, ssh.Password(c.VM.SSHPassword))
+	authMethods = append(authMethods, ssh.Password(s.Cfg.VM.SSHPassword))
 
 	sshConfig := &ssh.ClientConfig{
-		User:            c.VM.SSHUser,
+		User:            s.Cfg.VM.SSHUser,
 		Auth:            authMethods,
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: hostKeyCallback(s),
 		Timeout:         10 * time.Second,
 	}
 
-	addr := fmt.Sprintf("127.0.0.1:%d", c.VM.SSHPort)
+	addr := fmt.Sprintf("127.0.0.1:%d", s.Cfg.VM.SSHPort)
 	var client *ssh.Client
 	var err error
 
@@ -55,7 +101,7 @@ func Shell(s *config.State) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	client, err := GetClient(ctx, s.Cfg, s.HomeDir)
+	client, err := GetClient(ctx, s)
 	if err != nil {
 		return fmt.Errorf("failed to ge SSH client: %w", err)
 	}

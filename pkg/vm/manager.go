@@ -143,7 +143,7 @@ func VerifyDockerHealth(s *config.State) bool {
 func OrchestrateEnvironment(ctx context.Context, s *config.State) {
 	fmt.Println("⏳ Synchronizing network handshake channels...")
 
-	client, err := ssh.GetClient(ctx, s.Cfg, s.HomeDir)
+	client, err := ssh.GetClient(ctx, s)
 	if err != nil {
 		fmt.Printf("❌ Connection failed: %v\n", err)
 		return

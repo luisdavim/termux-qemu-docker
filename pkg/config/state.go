@@ -6,10 +6,19 @@ import (
 )
 
 type State struct {
-	Profile string
-	HomeDir string
-	Prefix  string
-	Cfg     *Config
+	Profile    string
+	HomeDir    string
+	Prefix     string
+	SSHHostKey []byte
+	Cfg        *Config
+}
+
+func (s *State) GetSSHHostKeyFile() string {
+	configDir := GetBaseDir(s.HomeDir)
+	if s.Profile == "" {
+		s.Profile = "default"
+	}
+	return filepath.Join(configDir, fmt.Sprintf("%s.pub", s.Profile))
 }
 
 func (s *State) GetSeedISOPath() string {

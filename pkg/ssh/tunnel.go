@@ -22,7 +22,7 @@ func StartTunnel(state *config.State, interval time.Duration) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	client, err := GetClient(ctx, state.Cfg, state.HomeDir)
+	client, err := GetClient(ctx, state)
 	if err != nil {
 		return err
 	}
