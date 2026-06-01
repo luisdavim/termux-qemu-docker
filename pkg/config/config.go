@@ -5,6 +5,7 @@ import (
 	"hash/fnv"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"gopkg.in/yaml.v3"
 )
@@ -96,6 +97,9 @@ func (c *Config) SetDefaults(profile, homeDir, prefix string) {
 	}
 	if c.AlpineSetup.Arch == "" {
 		c.AlpineSetup.Arch = "aarch64"
+		if runtime.GOARCH == "amd64" {
+			c.AlpineSetup.Arch = "x86_64"
+		}
 	}
 	if c.AlpineSetup.Mirror == "" {
 		c.AlpineSetup.Mirror = "https://dl-cdn.alpinelinux.org/alpine"
