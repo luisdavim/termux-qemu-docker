@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -130,9 +132,33 @@ func Shell(s *config.State) error {
 		width, height = 80, 40
 	}
 
-	if err := session.RequestPty("xterm-256color", height, width, modes); err != nil {
+	termType := os.Getenv("TERM")
+	if termType == "" {
+		termType = "xterm-256color"
+	}
+
+	if err := session.RequestPty(termType, height, width, modes); err != nil {
 		return fmt.Errorf("request for pseudo-terminal failed: %w", err)
 	}
+
+	// Handle window resizing
+	sigwinch := make(chan os.Signal, 1)
+	signal.Notify(sigwinch, syscall.SIGWINCH)
+	defer signal.Stop(sigwinch)
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-sigwinch:
+				width, height, err := term.GetSize(fd)
+				if err == nil {
+					_ = session.WindowChange(height, width)
+				}
+			}
+		}
+	}()
 
 	if err := session.Shell(); err != nil {
 		return fmt.Errorf("failed to start shell: %w", err)
