@@ -23,6 +23,15 @@ func CheckAndDownloadImage(c *config.Config) error {
 		return nil
 	}
 
+	if c.AlpineSetup.Version == "latest" {
+		fmt.Printf("🔍 Resolving latest Alpine %s version...\n", c.AlpineSetup.Arch)
+		ver, err := utils.GetLatestAlpineVersion(c.AlpineSetup.Mirror, c.AlpineSetup.Arch)
+		if err != nil {
+			return fmt.Errorf("failed to resolve latest version: %w", err)
+		}
+		c.AlpineSetup.Version = ver
+	}
+
 	fmt.Printf("📂 Profile Disk allocation missing. Downloading Alpine %s %s cloud image...\n", c.AlpineSetup.Version, c.AlpineSetup.Arch)
 	versionParts := strings.Split(c.AlpineSetup.Version, ".")
 	majorMinor := fmt.Sprintf("v%s.%s", versionParts[0], versionParts[1])

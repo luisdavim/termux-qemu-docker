@@ -5,6 +5,8 @@ import (
 	"hash/fnv"
 	"path/filepath"
 	"runtime"
+
+	"github.com/luisdavim/termux-docker/pkg/utils"
 )
 
 func (c *Config) SetDefaults(profile, homeDir, prefix string) {
@@ -51,10 +53,6 @@ func (c *Config) SetDefaults(profile, homeDir, prefix string) {
 			c.VM.DockerPort = 2375
 		}
 	}
-
-	if c.AlpineSetup.Version == "" {
-		c.AlpineSetup.Version = "3.23.4"
-	}
 	if c.AlpineSetup.Arch == "" {
 		c.AlpineSetup.Arch = "aarch64"
 		if runtime.GOARCH == "amd64" {
@@ -63,6 +61,14 @@ func (c *Config) SetDefaults(profile, homeDir, prefix string) {
 	}
 	if c.AlpineSetup.Mirror == "" {
 		c.AlpineSetup.Mirror = "https://dl-cdn.alpinelinux.org/alpine"
+	}
+
+	if c.AlpineSetup.Version == "" {
+		c.AlpineSetup.Version = "latest"
+		v, err := utils.GetLatestAlpineVersion(c.AlpineSetup.Mirror, c.AlpineSetup.Arch)
+		if err == nil {
+			c.AlpineSetup.Version = v
+		}
 	}
 	if c.AlpineSetup.Timezone == "" {
 		c.AlpineSetup.Timezone = "UTC"
