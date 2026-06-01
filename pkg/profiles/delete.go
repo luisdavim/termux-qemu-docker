@@ -68,6 +68,15 @@ func Delete(state *config.State) error {
 		}
 	}
 
+	// Delete Port Map
+	portMap := state.GetPortMapFile()
+	if _, err := os.Stat(portMap); err == nil {
+		fmt.Printf("🗑️ Deleting port map: %s\n", portMap)
+		if err := os.Remove(portMap); err != nil {
+			fmt.Printf("❌ Failed to delete port map: %v\n", err)
+		}
+	}
+
 	fmt.Printf("✅ Profile '%s' successfully deleted.\n", state.Profile)
 	return nil
 }

@@ -45,6 +45,7 @@ func NewRootCmd(homeDir string) *cobra.Command {
 	rootCmd.AddCommand(newTunnelCmd(state))
 	rootCmd.AddCommand(newLogsCmd(state))
 	rootCmd.AddCommand(newSSHCmd(state))
+	rootCmd.AddCommand(newPortsCmd(state))
 
 	return rootCmd
 }

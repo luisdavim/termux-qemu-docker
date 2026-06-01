@@ -72,7 +72,26 @@ func List(state *config.State) error {
 			pCfg.SetDefaults(p, state.HomeDir, state.Prefix)
 		}
 
-		portsStr := fmt.Sprintf("SSH:127.0.0.1:%d, Docker:127.0.0.1:%d", pCfg.VM.SSHPort, pCfg.VM.DockerPort)
+		portsStr := "-"
+
+		// Check for dynamic ports
+		portState, err := config.LoadPortMappings(tempState.GetPortMapFile())
+		if err == nil && len(portState.Mappings) > 0 {
+			var ports []string
+			for _, m := range portState.Mappings {
+				localPort := m.LocalAddress
+				if idx := strings.LastIndex(localPort, ":"); idx != -1 {
+					localPort = localPort[idx+1:]
+				}
+				vmPort := m.VMAddress
+				if idx := strings.LastIndex(vmPort, ":"); idx != -1 {
+					vmPort = vmPort[idx+1:]
+				}
+				ports = append(ports, fmt.Sprintf("%s:%s", vmPort, localPort))
+			}
+			portsStr = strings.Join(ports, ", ")
+		}
+
 		if _, err := fmt.Fprintf(w, "%s\t%s\t%d\t%sMB\t%dGB\t%s\t%s\n",
 			p, status, pCfg.VM.CPUs, pCfg.VM.Memory, pCfg.VM.DiskSizeGB, pidStr, portsStr); err != nil {
 			return fmt.Errorf("failed to write profile %s: %w", p, err)

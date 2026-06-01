@@ -68,3 +68,12 @@ func (s *State) GetDockerSocketPath() string {
 	}
 	return filepath.Join(configDir, fmt.Sprintf("docker-%s.sock", s.Profile))
 }
+
+func (s *State) GetPortMapFile() string {
+	configDir := GetBaseDir(s.HomeDir)
+	if s.Profile == "" {
+		s.Profile = "default"
+	}
+	return filepath.Join(configDir, fmt.Sprintf("ports-%s.json", s.Profile))
+}
+

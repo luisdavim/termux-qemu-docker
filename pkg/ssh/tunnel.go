@@ -44,6 +44,14 @@ func StartTunnel(state *config.State, interval time.Duration) error {
 	// Keep track of active forwarded ports on the Android host
 	activeListeners := make(map[string]net.Listener)
 
+	// Clean up state file on exit
+	defer func() {
+		_ = os.Remove(state.GetPortMapFile())
+	}()
+
+	// Initial update to show SYSTEM ports
+	updatePortState(state, activeListeners)
+
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -62,6 +70,8 @@ func StartTunnel(state *config.State, interval time.Duration) error {
 				continue
 			}
 
+			changed := false
+
 			// Spin up dynamic forwarders for newly discovered container ports
 			for port := range ports {
 				// Avoid clashing with systemic default ports
@@ -78,6 +88,7 @@ func StartTunnel(state *config.State, interval time.Duration) error {
 					}
 					activeListeners[port] = listener
 					fmt.Printf("[+] Auto-Forwarding detected port: %s -> VM Port %s\n", localAddr, port)
+					changed = true
 
 					go func(l net.Listener, p string) {
 						defer func() { _ = l.Close() }()
@@ -98,10 +109,42 @@ func StartTunnel(state *config.State, interval time.Duration) error {
 					fmt.Printf("[-] Stopped forwarding port: %s\n", port)
 					_ = activeListeners[port].Close()
 					delete(activeListeners, port)
+					changed = true
 				}
+			}
+
+			if changed {
+				updatePortState(state, activeListeners)
 			}
 		}
 	}
+}
+
+func updatePortState(s *config.State, listeners map[string]net.Listener) {
+	portState := config.PortMapState{
+		Mappings: []config.PortMapping{
+			{
+				LocalAddress: fmt.Sprintf("127.0.0.1:%d", s.Cfg.VM.DockerPort),
+				VMAddress:    "0.0.0.0:2375",
+				Status:       "SYSTEM",
+			},
+			{
+				LocalAddress: fmt.Sprintf("127.0.0.1:%d", s.Cfg.VM.SSHPort),
+				VMAddress:    "0.0.0.0:22",
+				Status:       "SYSTEM",
+			},
+		},
+	}
+
+	for port := range listeners {
+		portState.Mappings = append(portState.Mappings, config.PortMapping{
+			LocalAddress: fmt.Sprintf("127.0.0.1:%s", port),
+			VMAddress:    ":::" + port,
+			Status:       "ACTIVE",
+		})
+	}
+
+	_ = config.SavePortMappings(s.GetPortMapFile(), portState)
 }
 
 // Low overhead parser to fetch active TCP ports inside Alpine
