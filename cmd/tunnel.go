@@ -16,7 +16,7 @@ func newTunnelCmd(state *config.State) *cobra.Command {
 		Use:   "tunnel",
 		Short: "Start automatic port forwarding tunnel",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return ssh.StartTunnel(state, interval)
+			return ssh.StartConnForwarder(state, interval)
 		},
 	}
 

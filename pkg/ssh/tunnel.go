@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -18,7 +19,8 @@ import (
 	"github.com/luisdavim/termux-docker/pkg/config"
 )
 
-func StartTunnel(state *config.State, interval time.Duration) error {
+// StartConnForwarder briges the Docker socket from the VM to the host and sets up automatic port-forwarding
+func StartConnForwarder(state *config.State, interval time.Duration) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
@@ -64,9 +66,13 @@ func StartTunnel(state *config.State, interval time.Duration) error {
 			}
 			return nil
 		case <-ticker.C:
-			// Query /proc/net/tcp inside the VM to get listening ports in hex
+			// Query listening ports inside the VM
 			ports, err := getActiveVMPorts(client)
 			if err != nil {
+				// If the error is not temporary, it might mean the connection is dead
+				fmt.Printf("[-] Failed to query VM ports: %v\n", err)
+				// Small delay to avoid spamming if it's a persistent failure
+				time.Sleep(time.Second)
 				continue
 			}
 
@@ -90,16 +96,13 @@ func StartTunnel(state *config.State, interval time.Duration) error {
 					fmt.Printf("[+] Auto-Forwarding detected port: %s -> VM Port %s\n", localAddr, port)
 					changed = true
 
-					go func(l net.Listener, p string) {
-						defer func() { _ = l.Close() }()
-						for {
-							localConn, err := l.Accept()
-							if err != nil {
-								return
-							}
-							go bridgeStream(client, localConn, p)
-						}
-					}(listener, port)
+					// Create dialer for this port
+					targetPort := port
+					dial := func() (io.ReadWriteCloser, error) {
+						return client.Dial("tcp", "localhost:"+targetPort)
+					}
+
+					go ServeListener(ctx, listener, dial)
 				}
 			}
 
@@ -160,9 +163,9 @@ func getActiveVMPorts(client *ssh.Client) (map[string]bool, error) {
 	}
 
 	openPorts := map[string]bool{}
-	lines := strings.SplitSeq(buf.String(), "\n")
-	for line := range lines {
-		line = strings.TrimSpace(line)
+	scanner := bufio.NewScanner(&buf)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			continue
 		}
@@ -176,21 +179,5 @@ func getActiveVMPorts(client *ssh.Client) (map[string]bool, error) {
 			}
 		}
 	}
-	return openPorts, nil
-}
-
-func bridgeStream(client *ssh.Client, localConn net.Conn, port string) {
-	defer func() { _ = localConn.Close() }()
-	// Use localhost to allow the VM to resolve to 127.0.0.1 or [::1] as appropriate
-	remoteConn, err := client.Dial("tcp", "localhost:"+port)
-	if err != nil {
-		fmt.Printf("[-] Failed to dial remote port %s: %v\n", port, err)
-		return
-	}
-	defer func() { _ = remoteConn.Close() }()
-
-	chDone := make(chan struct{}, 2)
-	go func() { _, _ = io.Copy(remoteConn, localConn); chDone <- struct{}{} }()
-	go func() { _, _ = io.Copy(localConn, remoteConn); chDone <- struct{}{} }()
-	<-chDone
+	return openPorts, scanner.Err()
 }

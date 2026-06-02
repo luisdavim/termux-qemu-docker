@@ -89,6 +89,22 @@ func GetClient(ctx context.Context, s *config.State) (*ssh.Client, error) {
 		default:
 			client, err = ssh.Dial("tcp", addr, sshConfig)
 			if err == nil {
+				// Start keep-alive goroutine
+				go func() {
+					ticker := time.NewTicker(30 * time.Second)
+					defer ticker.Stop()
+					for {
+						select {
+						case <-ticker.C:
+							_, _, err := client.SendRequest("keepalive@openssh.com", true, nil)
+							if err != nil {
+								return
+							}
+						case <-ctx.Done():
+							return
+						}
+					}
+				}()
 				return client, nil
 			}
 			fmt.Printf("... waiting for VM network (attempt %d/60): %v\n", i+1, err)
@@ -144,18 +160,16 @@ func Shell(s *config.State) error {
 	// Handle window resizing
 	sigwinch := make(chan os.Signal, 1)
 	signal.Notify(sigwinch, syscall.SIGWINCH)
-	defer signal.Stop(sigwinch)
+	defer func() {
+		signal.Stop(sigwinch)
+		close(sigwinch)
+	}()
 
 	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-sigwinch:
-				width, height, err := term.GetSize(fd)
-				if err == nil {
-					_ = session.WindowChange(height, width)
-				}
+		for range sigwinch {
+			width, height, err := term.GetSize(fd)
+			if err == nil {
+				_ = session.WindowChange(height, width)
 			}
 		}
 	}()
