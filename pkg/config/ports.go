@@ -8,6 +8,7 @@ import (
 type PortMapping struct {
 	LocalAddress string `json:"local_address"`
 	VMAddress    string `json:"vm_address"`
+	Proto        string `json:"proto"`
 	Status       string `json:"status"`
 }
 

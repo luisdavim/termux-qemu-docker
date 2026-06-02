@@ -9,7 +9,7 @@ import (
 )
 
 var bufferPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		b := make([]byte, 32*1024)
 		return &b
 	},
@@ -52,23 +52,21 @@ func ServeListener(ctx context.Context, l net.Listener, dial DialFunc) {
 	for {
 		localConn, err := l.Accept()
 		if err != nil {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				// Only log if it's not a temporary error or context cancellation
-				return
-			}
+			return
 		}
 
 		go func() {
 			remoteConn, err := dial()
 			if err != nil {
-				fmt.Printf("[-] Failed to establish remote connection: %v\n", err)
+				fmt.Printf("[-] Failed to establish remote connection for %s -> %s: %v\n", localConn.LocalAddr(), localConn.RemoteAddr(), err)
 				_ = localConn.Close()
 				return
 			}
 			Proxy(ctx, localConn, remoteConn)
 		}()
+
+		if ctx.Err() != nil {
+			return
+		}
 	}
 }

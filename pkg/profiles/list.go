@@ -87,7 +87,7 @@ func List(state *config.State) error {
 				if idx := strings.LastIndex(vmPort, ":"); idx != -1 {
 					vmPort = vmPort[idx+1:]
 				}
-				ports = append(ports, fmt.Sprintf("%s:%s", vmPort, localPort))
+				ports = append(ports, fmt.Sprintf("%s:%s:%s", m.Proto, vmPort, localPort))
 			}
 			portsStr = strings.Join(ports, ", ")
 		}

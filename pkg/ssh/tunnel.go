@@ -79,27 +79,31 @@ func StartConnForwarder(state *config.State, interval time.Duration) error {
 			changed := false
 
 			// Spin up dynamic forwarders for newly discovered container ports
-			for port := range ports {
+			for id := range ports {
 				// Avoid clashing with systemic default ports
-				if port == "22" {
+				if id == "22 tcp" || id == "68 udp" || id == "546 udp" {
 					continue
 				}
 
-				if _, exists := activeListeners[port]; !exists {
-					localAddr := fmt.Sprintf("localhost:%s", port)
-					listener, err := net.Listen("tcp", localAddr)
+				parts := strings.Fields(id)
+				if len(parts) == 1 {
+					parts = append(parts, "tcp")
+				}
+
+				if _, exists := activeListeners[id]; !exists {
+					localAddr := fmt.Sprintf("localhost:%s", parts[0])
+					listener, err := net.Listen(parts[1], localAddr)
 					if err != nil {
-						fmt.Printf("[-] Failed to listen on %s: %v\n", localAddr, err)
+						fmt.Printf("[-] Failed to listen on %s %s: %v\n", parts[1], localAddr, err)
 						continue
 					}
-					activeListeners[port] = listener
-					fmt.Printf("[+] Auto-Forwarding detected port: %s -> VM Port %s\n", localAddr, port)
+					activeListeners[id] = listener
+					fmt.Printf("[+] Auto-Forwarding detected %s port: %s -> VM Port %s\n", parts[1], localAddr, parts[0])
 					changed = true
 
 					// Create dialer for this port
-					targetPort := port
 					dial := func() (io.ReadWriteCloser, error) {
-						return client.Dial("tcp", "localhost:"+targetPort)
+						return client.Dial(parts[1], "localhost:"+parts[0])
 					}
 
 					go ServeListener(ctx, listener, dial)
@@ -107,11 +111,11 @@ func StartConnForwarder(state *config.State, interval time.Duration) error {
 			}
 
 			// Clean up closed ports
-			for port := range activeListeners {
-				if !ports[port] {
-					fmt.Printf("[-] Stopped forwarding port: %s\n", port)
-					_ = activeListeners[port].Close()
-					delete(activeListeners, port)
+			for id := range activeListeners {
+				if !ports[id] {
+					fmt.Printf("[-] Stopped forwarding port: %s\n", id)
+					_ = activeListeners[id].Close()
+					delete(activeListeners, id)
 					changed = true
 				}
 			}
@@ -129,15 +133,21 @@ func updatePortState(s *config.State, listeners map[string]net.Listener) {
 			{
 				LocalAddress: fmt.Sprintf("127.0.0.1:%d", s.Cfg.VM.SSHPort),
 				VMAddress:    "0.0.0.0:22",
+				Proto:        "tcp",
 				Status:       "SYSTEM",
 			},
 		},
 	}
 
 	for port := range listeners {
+		parts := strings.Fields(port)
+		if len(parts) == 1 {
+			parts = append(parts, "tcp")
+		}
 		portState.Mappings = append(portState.Mappings, config.PortMapping{
-			LocalAddress: fmt.Sprintf("127.0.0.1:%s", port),
-			VMAddress:    ":::" + port,
+			LocalAddress: fmt.Sprintf("127.0.0.1:%s", parts[0]),
+			VMAddress:    ":::" + parts[0],
+			Proto:        parts[1],
 			Status:       "ACTIVE",
 		})
 	}
@@ -145,7 +155,7 @@ func updatePortState(s *config.State, listeners map[string]net.Listener) {
 	_ = config.SavePortMappings(s.GetPortMapFile(), portState)
 }
 
-// Low overhead parser to fetch active TCP ports inside Alpine
+// Low overhead parser to fetch active ports inside Alpine
 func getActiveVMPorts(client *ssh.Client) (map[string]bool, error) {
 	session, err := client.NewSession()
 	if err != nil {
@@ -157,7 +167,7 @@ func getActiveVMPorts(client *ssh.Client) (map[string]bool, error) {
 	session.Stdout = &buf
 
 	// Fetch listening sockets filtering out column headers
-	err = session.Run("netstat -tnl | awk '/:/{print $4}'")
+	err = session.Run("netstat -tunl | awk '/:/{print $4, $1}'")
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +183,7 @@ func getActiveVMPorts(client *ssh.Client) (map[string]bool, error) {
 		idx := strings.LastIndex(line, ":")
 		if idx != -1 {
 			portStr := line[idx+1:]
-			decPort, _ := strconv.Atoi(portStr)
+			decPort, _ := strconv.Atoi(strings.Fields(portStr)[0])
 			if decPort > 0 {
 				openPorts[portStr] = true
 			}

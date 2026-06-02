@@ -1,6 +1,6 @@
 # termux-docker
 
-A lightweight, profile-aware container VM manager for Termux. `termux-docker` automates the complex setup required to run Docker containers on Android by spawning an isolated Alpine Linux VM via QEMU and exposing the Docker daemon via TCP to your Termux environment.
+A lightweight, profile-aware container VM manager for Termux. `termux-docker` automates the complex setup required to run Docker containers on Android by spawning an isolated Alpine Linux VM via QEMU and exposing the Docker daemon via a file socket to your Termux environment.
 The idea is to provide a similar UX to [lima](github.com/lima-vm/lima) and [colima](github.com/abiosoft/colima) but for Android Termux.
 
 ## 🚀 Features
@@ -8,7 +8,6 @@ The idea is to provide a similar UX to [lima](github.com/lima-vm/lima) and [coli
 - **Automated Setup**: One-command dependency installation and configuration.
 - **Automatic port forwarding**: Detect open ports on the Docker VM and automatically setup port-forwarding
 - **True Docker Support**: Run real Docker containers within a lightweight Alpine VM.
-- **TCP Exposure**: Seamlessly use the `docker` CLI directly in Termux via a forwarded TCP port.
 - **Profile Aware**: Create multiple isolated VM instances (e.g., `dev`, `prod`, `test`) with unique network ports.
 - **Cloud-Init Integration**: Automatic root password and SSH configuration on first boot.
 - **Folder Sync**: High-performance host directory sharing via Virtio-9p.
@@ -80,7 +79,7 @@ termux-docker -p web-dev start
 termux-docker -p database start
 termux-docker list
 ```
-Each profile gets its own disk image, unique SSH port, and dedicated Docker TCP port.
+Each profile gets its own disk image and unique SSH port.
 
 ### Configuration Overrides
 You can override resources during start, and they will be saved to your profile's config:
