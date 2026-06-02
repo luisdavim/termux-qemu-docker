@@ -75,7 +75,7 @@ func StartTunnel(state *config.State, interval time.Duration) error {
 			// Spin up dynamic forwarders for newly discovered container ports
 			for port := range ports {
 				// Avoid clashing with systemic default ports
-				if port == "22" || port == "2375" {
+				if port == "22" {
 					continue
 				}
 
@@ -123,11 +123,6 @@ func StartTunnel(state *config.State, interval time.Duration) error {
 func updatePortState(s *config.State, listeners map[string]net.Listener) {
 	portState := config.PortMapState{
 		Mappings: []config.PortMapping{
-			{
-				LocalAddress: fmt.Sprintf("127.0.0.1:%d", s.Cfg.VM.DockerPort),
-				VMAddress:    "0.0.0.0:2375",
-				Status:       "SYSTEM",
-			},
 			{
 				LocalAddress: fmt.Sprintf("127.0.0.1:%d", s.Cfg.VM.SSHPort),
 				VMAddress:    "0.0.0.0:22",

@@ -44,13 +44,6 @@ func (c *Config) SetDefaults(profile, homeDir, prefix string) {
 			h.Write([]byte(profile))
 			portOffset := int(h.Sum32() % 500)
 			c.VM.SSHPort = 2222 + portOffset
-			if c.VM.DockerPort == 0 {
-				c.VM.DockerPort = 2375 + portOffset
-			}
-		}
-
-		if c.VM.DockerPort == 0 {
-			c.VM.DockerPort = 2375
 		}
 	}
 	if c.AlpineSetup.Arch == "" {

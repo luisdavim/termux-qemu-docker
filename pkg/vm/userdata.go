@@ -22,7 +22,7 @@ write_files:
     content: |
       {
         "storage-driver": "fuse-overlayfs",
-        "hosts": ["unix:///var/run/docker.sock", "tcp://0.0.0.0:2375"]
+        "hosts": ["unix:///var/run/docker.sock"]
       }
 
 # package_update: true

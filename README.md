@@ -46,8 +46,6 @@ Once the VM is "Healthy", `termux-docker` will provide an export command. To con
 
 ```bash
 export DOCKER_HOST=unix://${HOME}/.termux-docker/docker-default.sock
-# OR
-export DOCKER_HOST=http://127.0.0.1:2375
 ```
 
 You can now use docker as if it were native:

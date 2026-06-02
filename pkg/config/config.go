@@ -15,7 +15,6 @@ type Config struct {
 		DiskPath    string `yaml:"disk_path"`
 		DiskSizeGB  int    `yaml:"disk_size_gb"`
 		SSHPort     int    `yaml:"ssh_port"`
-		DockerPort  int    `yaml:"docker_port"`
 		SSHUser     string `yaml:"ssh_user"`
 		SSHPassword string `yaml:"ssh_password"`
 	} `yaml:"vm"`

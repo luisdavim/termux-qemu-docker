@@ -55,9 +55,7 @@ func Start(s *config.State) error {
 	if VerifyDockerHealth(s) {
 		fmt.Printf("\n✅ Profile context '%s' initialized and healthy!\n", s.Profile)
 		fmt.Println("👉 Execute this declaration statement locally to connect your shell:")
-		fmt.Printf(" export DOCKER_HOST=unix://%s\n", s.GetDockerSocketPath())
-		fmt.Println("  or:")
-		fmt.Printf(" export DOCKER_HOST=http://127.0.0.1:%d\n\n", c.VM.DockerPort)
+		fmt.Printf(" export DOCKER_HOST=unix://%s\n\n", s.GetDockerSocketPath())
 	} else {
 		_ = Stop(s)
 		return fmt.Errorf("health diagnostic failed. Docker daemon may still be starting or misconfigured")
@@ -76,7 +74,7 @@ func StartQEMU(s *config.State, seedISO string) error {
 		"-bios", fmt.Sprintf(filepath.Join(s.Prefix, "/share/qemu/edk2-%s-code.fd"), s.Cfg.AlpineSetup.Arch),
 		"-drive", fmt.Sprintf("if=virtio,file=%s,format=qcow2", s.Cfg.VM.DiskPath),
 		"-drive", fmt.Sprintf("if=virtio,file=%s,format=raw,readonly=on", seedISO),
-		"-netdev", fmt.Sprintf("user,id=n1,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2375", s.Cfg.VM.SSHPort, s.Cfg.VM.DockerPort),
+		"-netdev", fmt.Sprintf("user,id=n1,hostfwd=tcp::%d-:22", s.Cfg.VM.SSHPort),
 		"-device", "virtio-net-pci,netdev=n1", "-nographic",
 	}
 
