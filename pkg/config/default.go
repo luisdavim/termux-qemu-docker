@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/rand"
 	"fmt"
 	"hash/fnv"
 	"path/filepath"
@@ -24,7 +25,7 @@ func (c *Config) SetDefaults(profile, homeDir, prefix string) {
 		c.VM.SSHUser = "termux"
 	}
 	if c.VM.SSHPassword == "" {
-		c.VM.SSHPassword = "password123"
+		c.VM.SSHPassword = rand.Text()
 	}
 
 	if c.VM.DiskPath == "" {
