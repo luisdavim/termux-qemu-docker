@@ -90,6 +90,11 @@ func StartConnForwarder(state *config.State, interval time.Duration) error {
 					parts = append(parts, "tcp")
 				}
 
+				if parts[1] == "udp" {
+					// TDOO: implement UDP tunnel
+					continue
+				}
+
 				if _, exists := activeListeners[id]; !exists {
 					localAddr := fmt.Sprintf("localhost:%s", parts[0])
 					listener, err := net.Listen(parts[1], localAddr)
