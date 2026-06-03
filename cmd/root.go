@@ -27,7 +27,7 @@ func NewRootCmd() *cobra.Command {
 			var err error
 			state.HomeDir, err = os.UserHomeDir()
 			if err != nil {
-				return fmt.Errorf("faild to get home dir: %w", err)
+				return fmt.Errorf("failed to get home dir: %w", err)
 			}
 
 			state.Prefix = os.Getenv("TERMUX__PREFIX")
