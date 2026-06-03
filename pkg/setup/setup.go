@@ -63,19 +63,11 @@ func RunSetupEnvironment(prefix, homeDir, arch string) error {
 		fmt.Println("✅ QEMU boot components found.")
 	}
 
-	whoamiCmd := exec.Command("whoami")
-	usernameBytes, err := whoamiCmd.Output()
-	termuxUser := "termux"
-	if err == nil {
-		termuxUser = strings.TrimSpace(string(usernameBytes))
-	}
-
 	configFile := "config.yaml"
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
 		fmt.Println("📝 Default config.yaml absent. Materializing template framework mapping variables...")
 
 		baseCfg := config.NewDefaultConfig("default", homeDir, prefix)
-		baseCfg.Termux.SSHUser = termuxUser
 
 		yamlData, err := yaml.Marshal(baseCfg)
 		if err != nil {

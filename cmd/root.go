@@ -1,15 +1,18 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/luisdavim/termux-docker/pkg/config"
 )
 
-func NewRootCmd(homeDir string) *cobra.Command {
-	state := &config.State{HomeDir: homeDir}
+func NewRootCmd() *cobra.Command {
+	state := &config.State{}
 
 	rootCmd := &cobra.Command{
 		Use:           "termux-docker",
@@ -17,13 +20,28 @@ func NewRootCmd(homeDir string) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			if cmd.Name() == "list" || cmd.Name() == "help" || cmd.Name() == "completion" || cmd.Name() == "setup" {
+			if cmd.Name() == "help" || cmd.Name() == "completion" {
 				return nil
 			}
 
-			state.Prefix = os.Getenv("TERMUX__PREFIX")
-
 			var err error
+			state.HomeDir, err = os.UserHomeDir()
+			if err != nil {
+				return fmt.Errorf("faild to get home dir: %w", err)
+			}
+
+			state.Prefix = os.Getenv("TERMUX__PREFIX")
+			// fallback for older version of termux
+			if state.Prefix == "" && strings.Contains(state.HomeDir, "termux") {
+				if idx := strings.Index(state.HomeDir, "home"); idx > 0 {
+					state.Prefix = filepath.Join(state.HomeDir[:idx-1], "usr")
+				}
+			}
+
+			if cmd.Name() == "list" || cmd.Name() == "setup" {
+				return nil
+			}
+
 			state.Cfg, err = config.LoadConfig(state.Profile, state.HomeDir)
 			if err != nil {
 				state.Cfg = config.NewDefaultConfig(state.Profile, state.HomeDir, state.Prefix)

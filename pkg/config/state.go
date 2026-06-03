@@ -52,4 +52,3 @@ func (s *State) GetDockerSocketPath() string {
 func (s *State) GetPortMapFile() string {
 	return s.getPath(fmt.Sprintf("ports-%s.json", s.Profile))
 }
-

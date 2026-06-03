@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"hash/fnv"
+	"os"
 	"path/filepath"
 	"runtime"
 
@@ -11,30 +12,44 @@ import (
 )
 
 func (c *Config) SetDefaults(profile, homeDir, prefix string) {
+	if c.AlpineSetup.Mirror == "" {
+		c.AlpineSetup.Mirror = "https://dl-cdn.alpinelinux.org/alpine"
+	}
+
+	if c.AlpineSetup.Arch == "" {
+		c.AlpineSetup.Arch = "aarch64"
+		if runtime.GOARCH == "amd64" {
+			c.AlpineSetup.Arch = "x86_64"
+		}
+	}
+
+	if c.AlpineSetup.Version == "" {
+		c.AlpineSetup.Version = "latest"
+		v, err := utils.GetLatestAlpineVersion(c.AlpineSetup.Mirror, c.AlpineSetup.Arch)
+		if err == nil {
+			c.AlpineSetup.Version = v
+		}
+	}
+
+	if c.AlpineSetup.Timezone == "" {
+		c.AlpineSetup.Timezone = "UTC"
+	}
+
 	if c.VM.CPUs == 0 {
 		c.VM.CPUs = 2
 	}
 	if c.VM.Memory == "" {
 		c.VM.Memory = "2048"
 	}
-
 	if c.VM.DiskSizeGB == 0 {
 		c.VM.DiskSizeGB = 10
 	}
+
 	if c.VM.SSHUser == "" {
 		c.VM.SSHUser = "termux"
 	}
 	if c.VM.SSHPassword == "" {
 		c.VM.SSHPassword = rand.Text()
-	}
-
-	if c.VM.DiskPath == "" {
-		configDir := GetBaseDir(homeDir)
-		if profile == "default" || profile == "" {
-			c.VM.DiskPath = filepath.Join(configDir, "alpine.img")
-		} else {
-			c.VM.DiskPath = filepath.Join(configDir, fmt.Sprintf("alpine-%s.img", profile))
-		}
 	}
 
 	if c.VM.SSHPort == 0 {
@@ -47,33 +62,26 @@ func (c *Config) SetDefaults(profile, homeDir, prefix string) {
 			c.VM.SSHPort = 2222 + portOffset
 		}
 	}
-	if c.AlpineSetup.Arch == "" {
-		c.AlpineSetup.Arch = "aarch64"
-		if runtime.GOARCH == "amd64" {
-			c.AlpineSetup.Arch = "x86_64"
-		}
-	}
-	if c.AlpineSetup.Mirror == "" {
-		c.AlpineSetup.Mirror = "https://dl-cdn.alpinelinux.org/alpine"
+
+	if c.VM.BiosPath == "" {
+		c.VM.BiosPath = fmt.Sprintf(filepath.Join(prefix, "/share/qemu/edk2-%s-code.fd"), c.AlpineSetup.Arch)
 	}
 
-	if c.AlpineSetup.Version == "" {
-		c.AlpineSetup.Version = "latest"
-		v, err := utils.GetLatestAlpineVersion(c.AlpineSetup.Mirror, c.AlpineSetup.Arch)
-		if err == nil {
-			c.AlpineSetup.Version = v
+	if c.VM.DiskPath == "" {
+		configDir := GetBaseDir(homeDir)
+		if profile == "default" || profile == "" {
+			c.VM.DiskPath = filepath.Join(configDir, "alpine.img")
+		} else {
+			c.VM.DiskPath = filepath.Join(configDir, fmt.Sprintf("alpine-%s.img", profile))
 		}
-	}
-	if c.AlpineSetup.Timezone == "" {
-		c.AlpineSetup.Timezone = "UTC"
-	}
-
-	if c.Termux.SSHPort == 0 {
-		c.Termux.SSHPort = 8022
 	}
 
 	if len(c.Mounts) == 0 {
 		c.Mounts = []string{filepath.Join(homeDir)}
-		c.Mounts = append(c.Mounts, filepath.Join(prefix, "/tmp"))
+		tmpDir := os.Getenv("TMPDIR")
+		if tmpDir == "" {
+			tmpDir = filepath.Join(prefix, "/tmp")
+		}
+		c.Mounts = append(c.Mounts, tmpDir)
 	}
 }

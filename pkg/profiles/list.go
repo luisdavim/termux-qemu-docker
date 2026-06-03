@@ -13,8 +13,7 @@ import (
 )
 
 func List(state *config.State) error {
-	configDir := filepath.Join(state.HomeDir, ".termux-docker")
-	_ = os.MkdirAll(configDir, 0o755)
+	configDir := config.GetBaseDir(state.HomeDir)
 
 	files, err := filepath.Glob(filepath.Join(configDir, "config*.yaml"))
 	profiles := map[string]bool{"default": true}
@@ -55,7 +54,8 @@ func List(state *config.State) error {
 		pidStr := "-"
 
 		if data, err := os.ReadFile(pfile); err == nil {
-			pid, _ := strconv.Atoi(string(data))
+			pidStr = string(data)
+			pid, _ := strconv.Atoi(pidStr)
 			process, err := os.FindProcess(pid)
 			if err == nil && process.Signal(syscall.Signal(0)) == nil {
 				status = "Running"

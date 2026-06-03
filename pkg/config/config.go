@@ -12,6 +12,7 @@ type Config struct {
 	VM struct {
 		CPUs        int    `yaml:"cpus"`
 		Memory      string `yaml:"memory"`
+		BiosPath    string `yaml:"bios"`
 		DiskPath    string `yaml:"disk_path"`
 		DiskSizeGB  int    `yaml:"disk_size_gb"`
 		SSHPort     int    `yaml:"ssh_port"`
@@ -25,11 +26,6 @@ type Config struct {
 		Arch     string `yaml:"arch"`
 		Timezone string `yaml:"timezone"`
 	} `yaml:"alpine_setup"`
-
-	Termux struct {
-		SSHUser string `yaml:"ssh_user"`
-		SSHPort int    `yaml:"ssh_port"`
-	} `yaml:"termux"`
 
 	Mounts []string `yaml:"mounts"`
 

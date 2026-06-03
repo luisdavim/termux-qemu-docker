@@ -71,7 +71,7 @@ func getQEMUCmd(s *config.State) string {
 func StartQEMU(s *config.State, seedISO string) error {
 	args := []string{
 		"-M", "virt", "-cpu", "max", "-smp", strconv.Itoa(s.Cfg.VM.CPUs), "-m", s.Cfg.VM.Memory,
-		"-bios", fmt.Sprintf(filepath.Join(s.Prefix, "/share/qemu/edk2-%s-code.fd"), s.Cfg.AlpineSetup.Arch),
+		"-bios", s.Cfg.VM.BiosPath,
 		"-drive", fmt.Sprintf("if=virtio,file=%s,format=qcow2", s.Cfg.VM.DiskPath),
 		"-drive", fmt.Sprintf("if=virtio,file=%s,format=raw,readonly=on", seedISO),
 		"-netdev", fmt.Sprintf("user,id=n1,hostfwd=tcp::%d-:22", s.Cfg.VM.SSHPort),
