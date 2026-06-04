@@ -139,7 +139,7 @@ func startTunnel(s *config.State) error {
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command(slef, "tunnel")
+	cmd := exec.Command(slef, "tunnel", "-p", s.Profile)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	cmd.Stdout, cmd.Stderr = log, log
 
