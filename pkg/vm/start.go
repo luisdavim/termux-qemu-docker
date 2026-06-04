@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"syscall"
 
@@ -27,19 +26,14 @@ func Start(s *config.State) error {
 		return fmt.Errorf("cloud-init setup failed: %w", err)
 	}
 
-	if err := StartQEMU(s, seedISO); err != nil {
-		return err
-	}
-
 	fmt.Printf("🌀 Spawning isolated profile namespace [%s] (%d Cores, %sMB RAM)...\n", s.Profile, c.VM.CPUs, c.VM.Memory)
 
 	if _, err := strconv.Atoi(c.VM.Memory); err != nil {
 		return fmt.Errorf("invalid memory configuration: %s. Must be numeric (MB)", c.VM.Memory)
 	}
 
-	socketDir := filepath.Dir(s.GetDockerSocketPath())
-	if err := os.MkdirAll(socketDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create socket directory: %w", err)
+	if err := StartQEMU(s, seedISO); err != nil {
+		return err
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

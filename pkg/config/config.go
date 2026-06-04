@@ -46,7 +46,6 @@ func GetBaseDir(homeDir string) string {
 
 func GetConfigFilename(profile string, homeDir string) string {
 	configDir := GetBaseDir(homeDir)
-	_ = os.MkdirAll(configDir, 0o755)
 
 	filename := "config.yaml"
 	if profile != "default" && profile != "" {
@@ -80,5 +79,6 @@ func SaveConfig(profile string, homeDir string, c *Config) error {
 		return err
 	}
 
+	_ = os.MkdirAll(filepath.Dir(filename), 0o755)
 	return os.WriteFile(filename, data, 0o644)
 }

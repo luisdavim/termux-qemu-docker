@@ -50,6 +50,7 @@ func CheckAndDownloadImage(c *config.Config) error {
 		return fmt.Errorf("download failed: %v", err)
 	}
 
+	_ = os.MkdirAll(filepath.Dir(c.VM.DiskPath), 0o755)
 	if err := os.Rename(tempPath, c.VM.DiskPath); err != nil {
 		return err
 	}
@@ -207,6 +208,13 @@ func OrchestrateEnvironment(ctx context.Context, s *config.State) {
 				fmt.Printf("⚠️ Mount failed for %s: %v\n", m, err)
 			}
 		}
+	}
+
+	fmt.Println("⏳ Waiting for Docker...")
+	// Wait for up to 60 seconds for the docker socket to exist
+	waitDockerCmd := "timeout 60 sh -c 'until [ -S /var/run/docker.sock ]; do sleep 1; done'"
+	if err := ssh.RunCommand(client, waitDockerCmd); err != nil {
+		fmt.Printf("⚠️ Warning: Docker socket not found after : %v\n", err)
 	}
 
 	fmt.Println("🚀 Orchestration complete. Spawning background tunnel...")

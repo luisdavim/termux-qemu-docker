@@ -5,10 +5,12 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
-func DownloadFile(url string, filepath string) error {
-	out, err := os.Create(filepath)
+func DownloadFile(url string, path string) error {
+	_ = os.MkdirAll(filepath.Dir(path), 0o755)
+	out, err := os.Create(path)
 	if err != nil {
 		return err
 	}
