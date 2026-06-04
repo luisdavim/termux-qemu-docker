@@ -16,7 +16,7 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	"github.com/luisdavim/termux-docker/pkg/config"
+	"github.com/luisdavim/termux-qemu-docker/pkg/config"
 )
 
 // StartConnForwarder briges the Docker socket from the VM to the host and sets up automatic port-forwarding

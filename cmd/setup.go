@@ -3,8 +3,8 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/luisdavim/termux-docker/pkg/config"
-	"github.com/luisdavim/termux-docker/pkg/setup"
+	"github.com/luisdavim/termux-qemu-docker/pkg/config"
+	"github.com/luisdavim/termux-qemu-docker/pkg/setup"
 )
 
 func newSetupCmd(state *config.State) *cobra.Command {

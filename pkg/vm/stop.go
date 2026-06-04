@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/luisdavim/termux-docker/pkg/config"
+	"github.com/luisdavim/termux-qemu-docker/pkg/config"
 )
 
 func Stop(s *config.State) error {

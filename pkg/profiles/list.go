@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"text/tabwriter"
 
-	"github.com/luisdavim/termux-docker/pkg/config"
+	"github.com/luisdavim/termux-qemu-docker/pkg/config"
 )
 
 func List(state *config.State) error {

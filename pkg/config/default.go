@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/luisdavim/termux-docker/pkg/utils"
+	"github.com/luisdavim/termux-qemu-docker/pkg/utils"
 )
 
 func (c *Config) SetDefaults(profile, homeDir, prefix string) {

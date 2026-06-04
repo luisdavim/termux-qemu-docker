@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	commands "github.com/luisdavim/termux-docker/cmd"
+	commands "github.com/luisdavim/termux-qemu-docker/cmd"
 )
 
 func main() {

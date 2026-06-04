@@ -8,14 +8,14 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/luisdavim/termux-docker/pkg/config"
+	"github.com/luisdavim/termux-qemu-docker/pkg/config"
 )
 
 func NewRootCmd() *cobra.Command {
 	state := &config.State{}
 
 	rootCmd := &cobra.Command{
-		Use:           "termux-docker",
+		Use:           "termux-qemu-docker",
 		Short:         "A lightweight profile-aware container VM manager for Termux",
 		SilenceUsage:  true,
 		SilenceErrors: true,

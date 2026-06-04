@@ -13,9 +13,9 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/luisdavim/termux-docker/pkg/config"
-	"github.com/luisdavim/termux-docker/pkg/ssh"
-	"github.com/luisdavim/termux-docker/pkg/utils"
+	"github.com/luisdavim/termux-qemu-docker/pkg/config"
+	"github.com/luisdavim/termux-qemu-docker/pkg/ssh"
+	"github.com/luisdavim/termux-qemu-docker/pkg/utils"
 )
 
 func CheckAndDownloadImage(c *config.Config) error {
@@ -60,7 +60,7 @@ func CheckAndDownloadImage(c *config.Config) error {
 }
 
 func CreateSeedISO(s *config.State) (string, error) {
-	tempDir, err := os.MkdirTemp("", "termux-docker-seed-*")
+	tempDir, err := os.MkdirTemp("", "termux-qemu-docker-seed-*")
 	if err != nil {
 		return "", err
 	}

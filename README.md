@@ -1,6 +1,6 @@
-# termux-docker
+# termux-qemu-docker
 
-A lightweight, profile-aware container VM manager for Termux. `termux-docker` automates the complex setup required to run Docker containers on Android by spawning an isolated Alpine Linux VM via QEMU and exposing the Docker daemon via a file socket to your Termux environment.
+A lightweight, profile-aware container VM manager for Termux. `termux-qemu-docker` automates the complex setup required to run Docker containers on Android by spawning an isolated Alpine Linux VM via QEMU and exposing the Docker daemon via a file socket to your Termux environment.
 The idea is to provide a similar UX to [lima](github.com/lima-vm/lima) and [colima](github.com/abiosoft/colima) but for Android Termux.
 
 ## 🚀 Features
@@ -25,26 +25,26 @@ Before starting, ensure you have a modern Android device with Termux installed. 
 
 1. **Build the binary**:
    ```bash
-   go build -o termux-docker main.go
+   go build -o termux-qemu-docker main.go
    ```
 
 2. **Run the automated setup**:
    This installs dependencies and generates a default `config.yaml`.
    ```bash
-   termux-docker setup
+   termux-qemu-docker setup
    ```
 
 3. **Start the VM**:
    ```bash
-   termux-docker start
+   termux-qemu-docker start
    ```
 
 ## 🐳 Using Docker
 
-Once the VM is "Healthy", `termux-docker` will provide an export command. To connect your Termux `docker` CLI to the VM's daemon, run:
+Once the VM is "Healthy", `termux-qemu-docker` will provide an export command. To connect your Termux `docker` CLI to the VM's daemon, run:
 
 ```bash
-export DOCKER_HOST=unix://${HOME}/.termux-docker/docker-default.sock
+export DOCKER_HOST=unix://${HOME}/.termux-qemu-docker/docker-default.sock
 ```
 
 You can now use docker as if it were native:
@@ -75,32 +75,32 @@ The tool also automatically attempts to mount the Termux `$PREFIX/tmp` directory
 ### Profile Management
 Create separate environments using the `-p` or `--profile` flag:
 ```bash
-termux-docker -p web-dev start
-termux-docker -p database start
-termux-docker list
+termux-qemu-docker -p web-dev start
+termux-qemu-docker -p database start
+termux-qemu-docker list
 ```
 Each profile gets its own disk image and unique SSH port.
 
 ### Configuration Overrides
 You can override resources during start, and they will be saved to your profile's config:
 ```bash
-termux-docker start --cpus 4 --memory 4096 --disk 20
+termux-qemu-docker start --cpus 4 --memory 4096 --disk 20
 ```
 
 ## 🛑 Stopping & Deleting
 
 To gracefully shut down the VM:
 ```bash
-termux-docker stop
+termux-qemu-docker stop
 # Or for a specific profile
-termux-docker -p web-dev stop
+termux-qemu-docker -p web-dev stop
 ```
 
 To completely remove a profile and its disk image:
 ```bash
-termux-docker delete
+termux-qemu-docker delete
 # Or for a specific profile
-termux-docker -p web-dev delete
+termux-qemu-docker -p web-dev delete
 ```
 
 ## 🛡️ Security

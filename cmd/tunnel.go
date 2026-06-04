@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/luisdavim/termux-docker/pkg/config"
-	"github.com/luisdavim/termux-docker/pkg/ssh"
+	"github.com/luisdavim/termux-qemu-docker/pkg/config"
+	"github.com/luisdavim/termux-qemu-docker/pkg/ssh"
 )
 
 func newTunnelCmd(state *config.State) *cobra.Command {

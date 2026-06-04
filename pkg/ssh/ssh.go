@@ -12,7 +12,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
 
-	"github.com/luisdavim/termux-docker/pkg/config"
+	"github.com/luisdavim/termux-qemu-docker/pkg/config"
 )
 
 func getSSHHostKey(s *config.State, key ssh.PublicKey) ([]byte, error) {

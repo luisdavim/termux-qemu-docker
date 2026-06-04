@@ -10,7 +10,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/luisdavim/termux-docker/pkg/config"
+	"github.com/luisdavim/termux-qemu-docker/pkg/config"
 )
 
 func installPkgs(packages []string) error {
@@ -84,6 +84,6 @@ func RunSetupEnvironment(prefix, homeDir, arch string) error {
 
 	fmt.Println("\n🎉 Setup sequence completed successfully!")
 	fmt.Println("👉 Run your local OpenSSH background hook inside Termux next: 'sshd'")
-	fmt.Println("🚀 Start your lightweight container virtualization layer: './termux-docker start'")
+	fmt.Println("🚀 Start your lightweight container virtualization layer: './termux-qemu-docker start'")
 	return nil
 }

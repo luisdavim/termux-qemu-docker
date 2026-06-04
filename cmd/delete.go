@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/luisdavim/termux-docker/pkg/config"
-	"github.com/luisdavim/termux-docker/pkg/profiles"
+	"github.com/luisdavim/termux-qemu-docker/pkg/config"
+	"github.com/luisdavim/termux-qemu-docker/pkg/profiles"
 )
 
 func newDeleteCmd(state *config.State) *cobra.Command {

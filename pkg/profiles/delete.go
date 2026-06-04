@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/luisdavim/termux-docker/pkg/config"
-	"github.com/luisdavim/termux-docker/pkg/vm"
+	"github.com/luisdavim/termux-qemu-docker/pkg/config"
+	"github.com/luisdavim/termux-qemu-docker/pkg/vm"
 )
 
 func Delete(state *config.State) error {

@@ -1,7 +1,7 @@
 ---
 # This is an example .goreleaser.yml file with some sane defaults.
 # Make sure to check the documentation at http://goreleaser.com
-project_name: termux-docker
+project_name: termux-qemu-docker
 version: 2
 before:
   hooks:
@@ -29,20 +29,20 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
 brews:
-  - name: termux-docker
+  - name: termux-qemu-docker
     repository:
       owner: luisdavim
-      name: termux-docker
+      name: termux-qemu-docker
       branch: main
     directory: Formula
     description: "Watch a command and generate diffs from the output changes"
-    homepage: "https://github.com/luisdavim/termux-docker"
+    homepage: "https://github.com/luisdavim/termux-qemu-docker"
     license: "MIT"
     download_strategy: CurlDownloadStrategy
     install: |
-      bin.install "termux-docker"
+      bin.install "termux-qemu-docker"
     test: |
-      system "#{bin}/termux-docker", "-h"
+      system "#{bin}/termux-qemu-docker", "-h"
 checksum:
   name_template: "checksums.txt"
 snapshot:

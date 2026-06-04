@@ -41,7 +41,7 @@ func NewDefaultConfig(profile, homeDir, prefix string) *Config {
 }
 
 func GetBaseDir(homeDir string) string {
-	return filepath.Join(homeDir, ".termux-docker")
+	return filepath.Join(homeDir, ".termux-qemu-docker")
 }
 
 func GetConfigFilename(profile string, homeDir string) string {

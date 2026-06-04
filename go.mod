@@ -1,4 +1,4 @@
-module github.com/luisdavim/termux-docker
+module github.com/luisdavim/termux-qemu-docker
 
 go 1.26.3
 
