@@ -1,6 +1,6 @@
 package vm
 
-// tiny-cloud doesn't seem to support write_files or - | in runcmd
+// tiny-cloud doesn't seem to support - | in runcmd
 // this is formatted to support both tiny-cloud and cloud-init
 // tiny-cloud also doesn't add non existing groups so we add docker explicity at the end
 const userDataTemplate = `#cloud-config
@@ -8,6 +8,9 @@ ssh_pwauth: true
 hostname: {{.ProfileName}}
 chpasswd:
   expire: false
+groups:
+  - wheel
+  - docker
 users:
   - name: {{.SSHUser}}
     passwd: "{{.SSHPassword}}"
@@ -18,6 +21,14 @@ users:
     shell: /bin/ash
     ssh_authorized_keys:
       - {{.PublicKey}}
+
+write_files:
+  - path: /etc/docker/daemon.json
+    content: |
+      {
+        "storage-driver": "fuse-overlayfs",
+        "hosts": ["unix:///var/run/docker.sock"]
+      }
 
 # package_update: true
 # package_upgrade: true
@@ -31,10 +42,6 @@ packages:
   - linux-virt
 
 runcmd:
-  - 'mkdir -p /etc/doas.d'
-  - 'echo "permit nopass {{ .SSHUser }} as root" > /etc/doas.d/custom.conf'
-  - 'mkdir -p /etc/docker'
-  - 'echo "{\"storage-driver\": \"fuse-overlayfs\", \"hosts\": [\"unix:///var/run/docker.sock\"]}" > /etc/docker/daemon.json'
   - 'rc-update add cgroups default'
   - 'rc-update add docker default'
   - 'rc-service cgroups start'
