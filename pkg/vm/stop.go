@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strconv"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/luisdavim/termux-qemu-docker/pkg/config"
+	"github.com/luisdavim/termux-qemu-docker/pkg/retry"
 )
 
 func Stop(s *config.State) error {
@@ -38,15 +40,12 @@ func stop(name, pidFile, profile string) error {
 			fmt.Printf("⚠️ Failed to send SIGTERM to %s (PID %d): %v\n", name, pid, err)
 		}
 
-		for range 10 {
-			time.Sleep(1 * time.Second)
-			if err := process.Signal(syscall.Signal(0)); err != nil {
-				break
+		if err := retry.WithTimeout(context.Background(), 10*time.Second, time.Second, 2*time.Second, func() error {
+			return process.Signal(syscall.Signal(0))
+		}); err != nil && err != os.ErrProcessDone {
+			if err := process.Kill(); err != nil && err != os.ErrProcessDone {
+				fmt.Printf("⚠️ Failed to  stop process: %v\n", err)
 			}
-		}
-		if err := process.Kill(); err != nil && err != os.ErrProcessDone {
-			// Silently ignore
-			_ = err
 		}
 	}
 

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/luisdavim/termux-qemu-docker/pkg/config"
+	"github.com/luisdavim/termux-qemu-docker/pkg/retry"
 	"github.com/luisdavim/termux-qemu-docker/pkg/ssh"
 	"github.com/luisdavim/termux-qemu-docker/pkg/utils"
 )
@@ -140,24 +141,24 @@ func VerifyDockerHealth(s *config.State) bool {
 		},
 	}
 
-	for i := range 30 {
-		time.Sleep(5 * time.Second)
+	err := retry.WithTimeout(context.Background(), 2*time.Minute, time.Second, 5*time.Second, func() error {
 		resp, err := httpClient.Get("http://localhost/_ping")
 		if err == nil && resp.StatusCode == http.StatusOK {
-			return true
+			return nil
 		}
-		fmt.Printf("... checking Docker health (attempt %d/30)\n", i+1)
-	}
-	return false
+		fmt.Printf("... checking Docker health: %v\n", err)
+		return err
+	})
+
+	return err == nil
 }
 
-func OrchestrateEnvironment(ctx context.Context, s *config.State) {
+func OrchestrateEnvironment(ctx context.Context, s *config.State) error {
 	fmt.Println("⏳ Synchronizing network handshake channels...")
 
 	client, err := ssh.GetClient(ctx, s)
 	if err != nil {
-		fmt.Printf("❌ Connection failed: %v\n", err)
-		return
+		return fmt.Errorf("connection failed: %w", err)
 	}
 	defer func() { _ = client.Close() }()
 
@@ -226,4 +227,5 @@ func OrchestrateEnvironment(ctx context.Context, s *config.State) {
 	}
 
 	fmt.Println("🚀 Orchestration complete. Spawning background tunnel...")
+	return nil
 }

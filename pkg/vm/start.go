@@ -11,7 +11,7 @@ import (
 	"github.com/luisdavim/termux-qemu-docker/pkg/config"
 )
 
-func Start(s *config.State) error {
+func Start(s *config.State) (rerr error) {
 	if _, err := os.Stat(s.GetPIDFile()); err == nil {
 		return fmt.Errorf("the profile instance '%s' appears to be already active", s.Profile)
 	}
@@ -33,9 +33,18 @@ func Start(s *config.State) error {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	defer func() {
+		cancel()
+		if rerr != nil {
+			if err := Stop(s); err != nil {
+				fmt.Printf("⚠️ Warning: tfailed to  gracefully  stopp: %v\n", err)
+			}
+		}
+	}()
 
-	OrchestrateEnvironment(ctx, s)
+	if err := OrchestrateEnvironment(ctx, s); err != nil {
+		return err
+	}
 
 	if err := startTunnel(s); err != nil {
 		return fmt.Errorf("failed to start portforward tunnel: %w", err)
@@ -47,7 +56,6 @@ func Start(s *config.State) error {
 		fmt.Println("👉 Execute this declaration statement locally to connect your shell:")
 		fmt.Printf(" export DOCKER_HOST=unix://%s\n\n", s.GetDockerSocketPath())
 	} else {
-		_ = Stop(s)
 		return fmt.Errorf("health diagnostic failed. Docker daemon may still be starting or misconfigured")
 	}
 

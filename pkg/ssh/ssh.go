@@ -13,6 +13,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/luisdavim/termux-qemu-docker/pkg/config"
+	"github.com/luisdavim/termux-qemu-docker/pkg/retry"
 )
 
 func getSSHHostKey(s *config.State, key ssh.PublicKey) ([]byte, error) {
@@ -82,37 +83,35 @@ func GetClient(ctx context.Context, s *config.State) (*ssh.Client, error) {
 	var client *ssh.Client
 	var err error
 
-	for i := range 60 {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-			client, err = ssh.Dial("tcp", addr, sshConfig)
-			if err == nil {
-				// Start keep-alive goroutine
-				go func() {
-					ticker := time.NewTicker(30 * time.Second)
-					defer ticker.Stop()
-					for {
-						select {
-						case <-ticker.C:
-							_, _, err := client.SendRequest("keepalive@openssh.com", true, nil)
-							if err != nil {
-								return
-							}
-						case <-ctx.Done():
+	err = retry.WithTimeout(ctx, 5*time.Minute, time.Second, 5*time.Second, func() error {
+		client, err = ssh.Dial("tcp", addr, sshConfig)
+		if err == nil {
+			// Start keep-alive goroutine
+			go func() {
+				ticker := time.NewTicker(30 * time.Second)
+				defer ticker.Stop()
+				for {
+					select {
+					case <-ticker.C:
+						_, _, err := client.SendRequest("keepalive@openssh.com", true, nil)
+						if err != nil {
 							return
 						}
+					case <-ctx.Done():
+						return
 					}
-				}()
-				return client, nil
-			}
-			fmt.Printf("... waiting for VM network (attempt %d/60): %v\n", i+1, err)
-			time.Sleep(5 * time.Second)
+				}
+			}()
+			return nil
 		}
+		fmt.Printf("... waiting for VM network: %v\n", err)
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("core engine communication failed after 60 attempts: %w", err)
 	}
 
-	return nil, fmt.Errorf("core engine communication failed after 60 attempts: %w", err)
+	return client, nil
 }
 
 func Shell(s *config.State) error {
