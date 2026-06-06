@@ -39,8 +39,8 @@ func CheckAndDownloadImage(c *config.Config) error {
 	if c.AlpineSetup.Arch == "x86_64" {
 		archSuffix = "bios"
 	}
-	downloadURL := fmt.Sprintf("%s/%s/releases/cloud/nocloud_alpine-%s-%s-%s-cloudinit-r0.qcow2",
-		c.AlpineSetup.Mirror, majorMinor, c.AlpineSetup.Version, c.AlpineSetup.Arch, archSuffix)
+	downloadURL := fmt.Sprintf("%s/%s/releases/cloud/nocloud_alpine-%s-%s-%s-%s-r0.qcow2",
+		c.AlpineSetup.Mirror, majorMinor, c.AlpineSetup.Version, c.AlpineSetup.Arch, archSuffix, c.AlpineSetup.Bootstrap)
 
 	tempPath := c.VM.DiskPath + ".tmp"
 	if err := utils.DownloadFile(downloadURL, tempPath); err != nil {
@@ -125,6 +125,7 @@ func CreateSeedISO(s *config.State) (string, error) {
 	if err := cmd.Run(); err != nil {
 		return "", err
 	}
+
 	return isoPath, nil
 }
 
@@ -160,9 +161,16 @@ func OrchestrateEnvironment(ctx context.Context, s *config.State) {
 	}
 	defer func() { _ = client.Close() }()
 
-	fmt.Println("⏳ Waiting for cloud-init...")
-	if err := ssh.RunCommand(client, "cloud-init status --wait"); err != nil {
-		fmt.Printf("⚠️ Warning: cloud-init status check failed: %v\n", err)
+	if s.Cfg.AlpineSetup.Bootstrap == "tiny" {
+		fmt.Println("⏳ Waiting for tiny-cloud...")
+		if err := ssh.RunCommand(client, `while [[ $(tiny-cloud --bootstrap status) != "complete" ]]; do sleep 1; done`); err != nil {
+			fmt.Printf("⚠️ Warning: tiny-cloud status check failed: %v\n", err)
+		}
+	} else {
+		fmt.Println("⏳ Waiting for cloud-init...")
+		if err := ssh.RunCommand(client, "cloud-init status --wait"); err != nil {
+			fmt.Printf("⚠️ Warning: cloud-init status check failed: %v\n", err)
+		}
 	}
 
 	if len(s.Cfg.Provision.Commands) != 0 {

@@ -48,7 +48,8 @@ func NewRootCmd() *cobra.Command {
 			} else {
 				state.Cfg.SetDefaults(state.Profile, state.HomeDir, state.Prefix)
 			}
-			return nil
+
+			return state.Cfg.Validate()
 		},
 	}
 

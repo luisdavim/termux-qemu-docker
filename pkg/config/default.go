@@ -7,9 +7,22 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 
 	"github.com/luisdavim/termux-qemu-docker/pkg/utils"
 )
+
+func (c *Config) Validate() error {
+	if _, err := strconv.Atoi(c.VM.Memory); err != nil {
+		return fmt.Errorf("invalid memory configuration: %s. Must be numeric (MB)", c.VM.Memory)
+	}
+
+	if c.AlpineSetup.Bootstrap != "tiny" && c.AlpineSetup.Bootstrap != "cloudinit" {
+		return fmt.Errorf("invalid Bootstrap configuration: %s. Muat be tiny or cloudinit", c.AlpineSetup.Bootstrap)
+	}
+
+	return nil
+}
 
 func (c *Config) SetDefaults(profile, homeDir, prefix string) {
 	if c.AlpineSetup.Mirror == "" {
@@ -33,6 +46,10 @@ func (c *Config) SetDefaults(profile, homeDir, prefix string) {
 
 	if c.AlpineSetup.Timezone == "" {
 		c.AlpineSetup.Timezone = "UTC"
+	}
+
+	if c.AlpineSetup.Bootstrap == "" {
+		c.AlpineSetup.Bootstrap = "tiny"
 	}
 
 	if c.VM.CPUs == 0 {

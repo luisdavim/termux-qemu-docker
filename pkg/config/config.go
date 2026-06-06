@@ -21,10 +21,11 @@ type Config struct {
 	} `yaml:"vm"`
 
 	AlpineSetup struct {
-		Version  string `yaml:"version"`
-		Mirror   string `yaml:"mirror"`
-		Arch     string `yaml:"arch"`
-		Timezone string `yaml:"timezone"`
+		Version   string `yaml:"version"`
+		Mirror    string `yaml:"mirror"`
+		Arch      string `yaml:"arch"`
+		Bootstrap string `yaml:"bootstrap"`
+		Timezone  string `yaml:"timezone"`
 	} `yaml:"alpine_setup"`
 
 	Mounts []string `yaml:"mounts"`

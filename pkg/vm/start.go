@@ -28,10 +28,6 @@ func Start(s *config.State) error {
 
 	fmt.Printf("🌀 Spawning isolated profile namespace [%s] (%d Cores, %sMB RAM)...\n", s.Profile, c.VM.CPUs, c.VM.Memory)
 
-	if _, err := strconv.Atoi(c.VM.Memory); err != nil {
-		return fmt.Errorf("invalid memory configuration: %s. Must be numeric (MB)", c.VM.Memory)
-	}
-
 	if err := StartQEMU(s, seedISO); err != nil {
 		return err
 	}
