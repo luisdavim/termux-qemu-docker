@@ -23,7 +23,7 @@ func Start(s *config.State) (rerr error) {
 
 	seedISO, err := CreateSeedISO(s)
 	if err != nil {
-		return fmt.Errorf("cloud-init setup failed: %w", err)
+		return fmt.Errorf("bootstrap setup failed: %w", err)
 	}
 
 	fmt.Printf("🌀 Spawning isolated profile namespace [%s] (%d Cores, %sMB RAM)...\n", s.Profile, c.VM.CPUs, c.VM.Memory)
@@ -37,7 +37,7 @@ func Start(s *config.State) (rerr error) {
 		cancel()
 		if rerr != nil {
 			if err := Stop(s); err != nil {
-				fmt.Printf("⚠️ Warning: tfailed to  gracefully  stopp: %v\n", err)
+				fmt.Printf("⚠️ Warning: tfailed to  gracefully  stop: %v\n", err)
 			}
 		}
 	}()
@@ -142,7 +142,7 @@ func startTunnel(s *config.State) error {
 	cmd.Stdout, cmd.Stderr = log, log
 
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("VM error: %w", err)
+		return fmt.Errorf("tunnel error: %w", err)
 	}
 
 	// Flag to track if startup was fully successful

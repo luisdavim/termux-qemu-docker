@@ -2,7 +2,7 @@ package vm
 
 // tiny-cloud doesn't seem to support - | in runcmd
 // this is formatted to support both tiny-cloud and cloud-init
-// tiny-cloud also doesn't add non existing groups so we add docker explicity at the end
+// tiny-cloud also doesn't add non existing groups so we add docker explicitly at the end
 const userDataTemplate = `#cloud-config
 ssh_pwauth: true
 hostname: {{.ProfileName}}
