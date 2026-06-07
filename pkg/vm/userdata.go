@@ -26,7 +26,6 @@ write_files:
   - path: /etc/docker/daemon.json
     content: |
       {
-        "storage-driver": "fuse-overlayfs",
         "hosts": ["unix:///var/run/docker.sock"]
       }
 
@@ -38,15 +37,18 @@ packages:
   - docker
   - socat
   - mount
-  - fuse-overlayfs
+  - haveged
   - linux-virt
 
 runcmd:
+  - 'echo 1 > /proc/sys/net/ipv4/ip_forward'
+  - 'echo 1 > /proc/sys/fs/may_detach_mounts'
+  - 'rc-service, haveged, start'
+  - 'rc-update, add, haveged, default'
   - 'rc-update add cgroups default'
-  - 'rc-update add docker default'
   - 'rc-service cgroups start'
   - 'rc-service docker start'
-  - 'echo 1 > /proc/sys/net/ipv4/ip_forward'
+  - 'rc-update add docker default'
   - 'sed -i "s/#PasswordAuthentication yes/PasswordAuthentication yes/g" /etc/ssh/sshd_config'
   - 'sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/g" /etc/ssh/sshd_config'
   - 'sed -i "s/AllowTcpForwarding no/AllowTcpForwarding yes/g" /etc/ssh/sshd_config'
