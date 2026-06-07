@@ -36,13 +36,13 @@ func stop(name, pidFile, profile string) error {
 	process, err := os.FindProcess(pid)
 	if err == nil {
 		fmt.Printf("🛑 Terminating %s for workspace '%s' (PID %d)...\n", name, profile, pid)
-		if err := process.Signal(syscall.SIGTERM); err != nil && err != os.ErrProcessDone {
+		if err := process.Signal(syscall.SIGTERM); err != nil && err != os.ErrProcessDone && err != os.ErrNoHandle {
 			fmt.Printf("⚠️ Failed to send SIGTERM to %s (PID %d): %v\n", name, pid, err)
 		}
 
 		if err := retry.WithTimeout(context.Background(), 10*time.Second, time.Second, 2*time.Second, func() error {
 			return process.Signal(syscall.Signal(0))
-		}); err != nil && err != os.ErrProcessDone {
+		}); err != nil && err != os.ErrProcessDone && err != os.ErrNoHandle {
 			if err := process.Kill(); err != nil && err != os.ErrProcessDone {
 				fmt.Printf("⚠️ Failed to  stop process: %v\n", err)
 			}

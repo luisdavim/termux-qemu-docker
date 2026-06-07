@@ -19,6 +19,7 @@ type Config struct {
 		SSHPort      int    `yaml:"ssh_port"`
 		SSHUser      string `yaml:"ssh_user"`
 		SSHPassword  string `yaml:"ssh_password"`
+		UseKVM       bool   `yaml:"use_kvm"`
 	} `yaml:"vm"`
 
 	AlpineSetup struct {

@@ -33,6 +33,10 @@ func newStartCmd(state *config.State) *cobra.Command {
 				dirty = true
 			}
 
+			if opts.UseKVM {
+				state.Cfg.VM.UseKVM = opts.UseKVM
+			}
+
 			if dirty {
 				_ = config.SaveConfig(state.Profile, state.HomeDir, state.Cfg)
 			}

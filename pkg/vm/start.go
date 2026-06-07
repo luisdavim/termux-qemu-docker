@@ -78,8 +78,7 @@ func StartQEMU(s *config.State, seedISO string) error {
 	}
 
 	args := []string{
-		"-M", machine, "-cpu", "max", "-smp", strconv.Itoa(s.Cfg.VM.CPUs), "-m", s.Cfg.VM.Memory,
-		"-accel", "tcg,tb-size=256", "-nographic",
+		"-M", machine, "-cpu", "max", "-smp", strconv.Itoa(s.Cfg.VM.CPUs), "-m", s.Cfg.VM.Memory, "-nographic",
 		"-bios", s.Cfg.VM.BiosPath,
 		"-drive", fmt.Sprintf("if=virtio,file=%s,format=qcow2,cache=unsafe,discard=on", s.Cfg.VM.DiskPath),
 		"-drive", fmt.Sprintf("if=virtio,file=%s,format=raw,readonly=on", seedISO),
@@ -87,6 +86,12 @@ func StartQEMU(s *config.State, seedISO string) error {
 		"-device", fmt.Sprintf("%s,netdev=n1", netDevice),
 		"-object", "rng-random,id=rng0,filename=/dev/urandom",
 		"-device", fmt.Sprintf("%s,rng=rng0", rngDevice),
+	}
+
+	if s.Cfg.VM.UseKVM {
+		args = append(args, "-enable-kvm")
+	} else {
+		args = append(args, "-accel", "tcg,tb-size=256")
 	}
 
 	// boot setup, replaces "-bios", s.Cfg.VM.BiosPath
@@ -164,6 +169,10 @@ func runInBackground(name, pidFile, logFile string, args ...string) (pid int, re
 
 	if err := os.WriteFile(pidFile, []byte(strconv.Itoa(cmd.Process.Pid)), 0o644); err != nil {
 		return -1, fmt.Errorf("failed to write PID file: %w", err)
+	}
+
+	if cmd.ProcessState != nil {
+		return -1, fmt.Errorf("process terminated with %d", cmd.ProcessState.ExitCode())
 	}
 
 	return cmd.Process.Pid, nil
