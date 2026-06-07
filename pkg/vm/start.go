@@ -70,6 +70,7 @@ func getQEMUCmd(s *config.State) string {
 func StartQEMU(s *config.State, seedISO string) error {
 	machine := "virt"
 	netDevice := "virtio-net-pci"
+	blkDevice := "virtio-blk-pci"
 	fsDevice := "virtio-9p-pci"
 	rngDevice := "virtio-rng-pci"
 
@@ -80,8 +81,16 @@ func StartQEMU(s *config.State, seedISO string) error {
 	args := []string{
 		"-M", machine, "-cpu", "max", "-smp", strconv.Itoa(s.Cfg.VM.CPUs), "-m", s.Cfg.VM.Memory, "-nographic",
 		"-bios", s.Cfg.VM.BiosPath,
-		"-drive", fmt.Sprintf("if=virtio,file=%s,format=qcow2,cache=unsafe,discard=on", s.Cfg.VM.DiskPath),
+		// Drop QEMU & UEFI Firmware delays down to 0ms
+		"-boot", "menu=on,splash-time=0",
+		"-fw_cfg", "name=opt/org.tianocore.BdsSkipSlightDelay,string=1",
+		"-fw_cfg", "name=opt/org.gnu.grub.timeout,string=0",
+		// Storage allocation
+		"-object", "iothread,id=iothread0",
+		"-device", fmt.Sprintf("%s,drive=hd0,iothread=iothread0,num-queues=%d", blkDevice, s.Cfg.VM.CPUs),
+		"-drive", fmt.Sprintf("if=none,id=hd0,file=%s,format=raw,cache=unsafe,discard=on,aio=threads", s.Cfg.VM.DiskPath),
 		"-drive", fmt.Sprintf("if=virtio,file=%s,format=raw,readonly=on", seedISO),
+		// Network & System Hardware Layout
 		"-netdev", fmt.Sprintf("user,id=n1,hostfwd=tcp::%d-:22", s.Cfg.VM.SSHPort),
 		"-device", fmt.Sprintf("%s,netdev=n1", netDevice),
 		"-object", "rng-random,id=rng0,filename=/dev/urandom",
@@ -91,17 +100,8 @@ func StartQEMU(s *config.State, seedISO string) error {
 	if s.Cfg.VM.UseKVM {
 		args = append(args, "-enable-kvm")
 	} else {
-		args = append(args, "-accel", "tcg,tb-size=256")
+		args = append(args, "-accel", "tcg,thread=multi,tb-size=256")
 	}
-
-	// boot setup, replaces "-bios", s.Cfg.VM.BiosPath
-	// if err := utils.CopyFile(s.Cfg.VM.BiosVarsPath, s.GetBootVarsPath()); err != nil {
-	// 	return fmt.Errorf("failed to copy boot vars file: %w", err)
-	// }
-	// args = append(args, "-drive", fmt.Sprintf("if=pflash,format=raw,readonly=on,file=%s", s.Cfg.VM.BiosPath),
-	// 	"-drive", fmt.Sprintf("if=pflash,format=raw,file=%s", s.GetBootVarsPath()),
-	// 	"-fw_cfg", "opt/org.gnu.grub/config,string=set timeout=0\nset default=0\nboot",
-	// )
 
 	for i, m := range s.Cfg.Mounts {
 		if err := os.MkdirAll(m, 0o755); err != nil {

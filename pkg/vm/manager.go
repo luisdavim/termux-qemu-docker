@@ -38,9 +38,9 @@ func CheckAndDownloadImage(c *config.Config) error {
 	versionParts := strings.Split(c.AlpineSetup.Version, ".")
 	majorMinor := fmt.Sprintf("v%s.%s", versionParts[0], versionParts[1])
 	archSuffix := "uefi"
-	if c.AlpineSetup.Arch == "x86_64" {
-		archSuffix = "bios"
-	}
+	// if c.AlpineSetup.Arch == "x86_64" {
+	// 	archSuffix = "bios"
+	// }
 	downloadURL := fmt.Sprintf("%s/%s/releases/cloud/nocloud_alpine-%s-%s-%s-%s-r0.qcow2",
 		c.AlpineSetup.Mirror, majorMinor, c.AlpineSetup.Version, c.AlpineSetup.Arch, archSuffix, c.AlpineSetup.Bootstrap)
 
@@ -58,8 +58,23 @@ func CheckAndDownloadImage(c *config.Config) error {
 	}
 
 	fmt.Printf("📦 Resizing disk to %dGB...\n", c.VM.DiskSizeGB)
-	cmd := exec.Command("qemu-img", "resize", c.VM.DiskPath, fmt.Sprintf("%dG", c.VM.DiskSizeGB))
-	return cmd.Run()
+	resizeCmd := exec.Command("qemu-img", "resize", c.VM.DiskPath, fmt.Sprintf("%dG", c.VM.DiskSizeGB))
+	if err := resizeCmd.Run(); err != nil {
+		return fmt.Errorf("failed to resize image: %w", err)
+	}
+
+	fmt.Println("💿 Converting disk image to raw format for performance...")
+	rawPath := c.VM.DiskPath + ".raw"
+	convertCmd := exec.Command("qemu-img", "convert", "-f", "qcow2", "-O", "raw", c.VM.DiskPath, rawPath)
+	if err := convertCmd.Run(); err != nil {
+		return fmt.Errorf("failed to convert image to raw: %w", err)
+	}
+
+	if err := os.Rename(rawPath, c.VM.DiskPath); err != nil {
+		return fmt.Errorf("failed to replace qcow2 with raw image: %w", err)
+	}
+
+	return nil
 }
 
 // CreateSeedISO generates a Cloud-Init NoCloud ISO containing user-data, meta-data, and vendor-data.

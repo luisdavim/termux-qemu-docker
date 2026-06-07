@@ -69,10 +69,10 @@ runcmd:
   - 'echo 1 > /proc/sys/net/ipv4/ip_forward'
   - 'echo 1 > /proc/sys/fs/may_detach_mounts'
   - 'rc-update add cgroups default'
-  - 'rc-update add containerd default'
-  - 'rc-update add docker default'
   - 'rc-service cgroups start'
+  - 'rc-update add containerd default'
   - 'rc-service containerd start'
+  - 'rc-update add docker default'
   - 'rc-service docker start'
   - 'sed -i "s/#PasswordAuthentication yes/PasswordAuthentication yes/g" /etc/ssh/sshd_config'
   - 'sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/g" /etc/ssh/sshd_config'
@@ -83,4 +83,6 @@ runcmd:
   - 'chmod 755 /home/{{ .SSHUser }}'
   - 'chmod 700 /home/{{ .SSHUser }}/.ssh'
   - 'addgroup {{.SSHUser}} docker'
+  - sed -i 's/timeout=10/timeout=0/g' /boot/grub/grub.cfg
+  - sed -i 's/GRUB_TIMEOUT=10/GRUB_TIMEOUT=0/g' /etc/default/grub
 `
