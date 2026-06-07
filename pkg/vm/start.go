@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"syscall"
 	"time"
 
 	"github.com/luisdavim/termux-qemu-docker/pkg/config"
+	"github.com/luisdavim/termux-qemu-docker/pkg/utils"
 )
 
 func Start(s *config.State) (rerr error) {
@@ -73,14 +75,17 @@ func StartQEMU(s *config.State, seedISO string) error {
 	blkDevice := "virtio-blk-pci"
 	fsDevice := "virtio-9p-pci"
 	rngDevice := "virtio-rng-pci"
+	cpu := "max"
 
 	if s.Cfg.AlpineSetup.Arch == "x86_64" {
 		machine = "q35"
+		if runtime.GOARCH != "amd64" {
+			cpu = "qemu64"
+		}
 	}
 
 	args := []string{
-		"-M", machine, "-cpu", "max", "-smp", strconv.Itoa(s.Cfg.VM.CPUs), "-m", s.Cfg.VM.Memory, "-nographic",
-		"-bios", s.Cfg.VM.BiosPath,
+		"-M", machine, "-cpu", cpu, "-smp", strconv.Itoa(s.Cfg.VM.CPUs), "-m", s.Cfg.VM.Memory, "-nographic",
 		// Drop QEMU & UEFI Firmware delays down to 0ms
 		"-boot", "menu=on,splash-time=0",
 		"-fw_cfg", "name=opt/org.tianocore.BdsSkipSlightDelay,string=1",
@@ -96,6 +101,16 @@ func StartQEMU(s *config.State, seedISO string) error {
 		"-object", "rng-random,id=rng0,filename=/dev/urandom",
 		"-device", fmt.Sprintf("%s,rng=rng0", rngDevice),
 	}
+
+	// boot setup, replaces "-bios", s.Cfg.VM.BiosPath
+	if err := utils.CopyFile(s.Cfg.VM.BiosVarsPath, s.GetBootVarsPath()); err != nil {
+		return fmt.Errorf("failed to copy boot vars file: %w", err)
+	}
+	args = append(args,
+		"-drive", fmt.Sprintf("if=pflash,format=raw,readonly=on,file=%s", s.Cfg.VM.BiosPath),
+		"-drive", fmt.Sprintf("if=pflash,format=raw,file=%s", s.GetBootVarsPath()),
+		"-fw_cfg", "opt/org.gnu.grub/config,string=set timeout=0\nset default=0\nboot",
+	)
 
 	if s.Cfg.VM.UseKVM {
 		args = append(args, "-enable-kvm")

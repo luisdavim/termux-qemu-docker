@@ -89,6 +89,9 @@ func (c *Config) SetDefaults(profile, homeDir, prefix string) {
 		if arch == "aarch64" {
 			arch = "arm"
 		}
+		if arch == "x86_64" {
+			arch = "i386"
+		}
 		c.VM.BiosVarsPath = fmt.Sprintf(filepath.Join(prefix, "/share/qemu/edk2-%s-vars.fd"), arch)
 	}
 

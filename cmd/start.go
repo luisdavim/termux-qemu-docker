@@ -29,7 +29,9 @@ func newStartCmd(state *config.State) *cobra.Command {
 			}
 
 			if opts.Arch != "" {
-				state.Cfg.AlpineSetup.Arch = opts.Arch
+				if err := state.UpdateArch(opts.Arch); err != nil {
+					return err
+				}
 				dirty = true
 			}
 

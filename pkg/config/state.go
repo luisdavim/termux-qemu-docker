@@ -56,3 +56,16 @@ func (s *State) GetDockerSocketPath() string {
 func (s *State) GetPortMapFile() string {
 	return s.getPath(fmt.Sprintf("ports-%s.json", s.Profile))
 }
+
+func (s *State) UpdateArch(arch string) error {
+	s.Cfg.AlpineSetup.Arch = arch
+	s.Cfg.VM.BiosPath = fmt.Sprintf(filepath.Join(s.Prefix, "/share/qemu/edk2-%s-code.fd"), s.Cfg.AlpineSetup.Arch)
+	if arch == "aarch64" {
+		arch = "arm"
+	}
+	if arch == "x86_64" {
+		arch = "i386"
+	}
+	s.Cfg.VM.BiosVarsPath = fmt.Sprintf(filepath.Join(s.Prefix, "/share/qemu/edk2-%s-vars.fd"), arch)
+	return nil
+}
