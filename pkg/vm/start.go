@@ -79,11 +79,11 @@ func StartQEMU(s *config.State, seedISO string) error {
 
 	args := []string{
 		"-M", machine, "-cpu", "max", "-smp", strconv.Itoa(s.Cfg.VM.CPUs), "-m", s.Cfg.VM.Memory,
-		"-bios", s.Cfg.VM.BiosPath,
+		"-bios", s.Cfg.VM.BiosPath, "-nographic",
 		"-drive", fmt.Sprintf("if=virtio,file=%s,format=qcow2", s.Cfg.VM.DiskPath),
 		"-drive", fmt.Sprintf("if=virtio,file=%s,format=raw,readonly=on", seedISO),
 		"-netdev", fmt.Sprintf("user,id=n1,hostfwd=tcp::%d-:22", s.Cfg.VM.SSHPort),
-		"-device", fmt.Sprintf("%s,netdev=n1", netDevice), "-nographic",
+		"-device", fmt.Sprintf("%s,netdev=n1", netDevice),
 	}
 
 	// boot setup, replaces "-bios", s.Cfg.VM.BiosPath

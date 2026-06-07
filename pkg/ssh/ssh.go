@@ -76,7 +76,7 @@ func GetClient(ctx context.Context, s *config.State) (*ssh.Client, error) {
 		User:            s.Cfg.VM.SSHUser,
 		Auth:            authMethods,
 		HostKeyCallback: hostKeyCallback(s),
-		Timeout:         10 * time.Second,
+		Timeout:         5 * time.Second,
 	}
 
 	addr := fmt.Sprintf("127.0.0.1:%d", s.Cfg.VM.SSHPort)
