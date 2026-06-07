@@ -81,7 +81,7 @@ func StartQEMU(s *config.State, seedISO string) error {
 		"-M", machine, "-cpu", "max", "-smp", strconv.Itoa(s.Cfg.VM.CPUs), "-m", s.Cfg.VM.Memory,
 		"-accel", "tcg,tb-size=256", "-nographic",
 		"-bios", s.Cfg.VM.BiosPath,
-		"-drive", fmt.Sprintf("if=virtio,file=%s,format=qcow2,cache=writeback,discard=on", s.Cfg.VM.DiskPath),
+		"-drive", fmt.Sprintf("if=virtio,file=%s,format=qcow2,cache=unsafe,discard=on", s.Cfg.VM.DiskPath),
 		"-drive", fmt.Sprintf("if=virtio,file=%s,format=raw,readonly=on", seedISO),
 		"-netdev", fmt.Sprintf("user,id=n1,hostfwd=tcp::%d-:22", s.Cfg.VM.SSHPort),
 		"-device", fmt.Sprintf("%s,netdev=n1", netDevice),

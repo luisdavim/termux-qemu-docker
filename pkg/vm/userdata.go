@@ -23,10 +23,35 @@ users:
       - {{.PublicKey}}
 
 write_files:
+  - path: /etc/containerd/config.toml
+    content: |
+      version = 3
+      root = "/var/lib/containerd"
+      state = "/run/containerd"
+
+      [grpc]
+        address = "/run/containerd/containerd.sock"
+
+      [debug]
+        level = "info"
+
+      [plugins]
+        [plugins."io.containerd.cri.v1.images"]
+          snapshotter = "overlayfs"
+          [plugins."io.containerd.cri.v1.images".registry]
+            config_path = "/etc/containerd/certs.d:/etc/docker/certs.d"
+
+        [plugins."io.containerd.cri.v1.runtime"]
+          [plugins."io.containerd.cri.v1.runtime".cni]
+            bin_dirs = ["/usr/libexec/cni"]
+
+      disabled_plugins = ["io.containerd.snapshotter.v1.btrfs", "io.containerd.snapshotter.v1.zfs", "io.containerd.snapshotter.v1.devmapper"]
+
   - path: /etc/docker/daemon.json
     content: |
       {
-        "hosts": ["unix:///var/run/docker.sock"]
+        "hosts": ["unix:///var/run/docker.sock"],
+        "containerd": "/run/containerd/containerd.sock"
       }
 
 # package_update: true
@@ -35,20 +60,20 @@ write_files:
 # # package_reboot: true
 packages:
   - docker
+  - containerd
   - socat
   - mount
-  - haveged
   - linux-virt
 
 runcmd:
   - 'echo 1 > /proc/sys/net/ipv4/ip_forward'
   - 'echo 1 > /proc/sys/fs/may_detach_mounts'
-  - 'rc-service, haveged, start'
-  - 'rc-update, add, haveged, default'
   - 'rc-update add cgroups default'
-  - 'rc-service cgroups start'
-  - 'rc-service docker start'
+  - 'rc-update add containerd default'
   - 'rc-update add docker default'
+  - 'rc-service cgroups start'
+  - 'rc-service containerd start'
+  - 'rc-service docker start'
   - 'sed -i "s/#PasswordAuthentication yes/PasswordAuthentication yes/g" /etc/ssh/sshd_config'
   - 'sed -i "s/PasswordAuthentication no/PasswordAuthentication yes/g" /etc/ssh/sshd_config'
   - 'sed -i "s/AllowTcpForwarding no/AllowTcpForwarding yes/g" /etc/ssh/sshd_config'
