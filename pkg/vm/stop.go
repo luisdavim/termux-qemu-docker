@@ -36,7 +36,7 @@ func stop(name, pidFile, profile string) error {
 	process, err := os.FindProcess(pid)
 	if err == nil {
 		fmt.Printf("🛑 Terminating %s for workspace '%s' (PID %d)...\n", name, profile, pid)
-		if err := process.Signal(syscall.SIGTERM); err != nil {
+		if err := process.Signal(syscall.SIGTERM); err != nil && err != os.ErrProcessDone {
 			fmt.Printf("⚠️ Failed to send SIGTERM to %s (PID %d): %v\n", name, pid, err)
 		}
 

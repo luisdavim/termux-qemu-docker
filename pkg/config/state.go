@@ -29,6 +29,10 @@ func (s *State) GetSeedISOPath() string {
 	return s.getPath(fmt.Sprintf("seed-%s.iso", s.Profile))
 }
 
+func (s *State) GetBootVarsPath() string {
+	return s.getPath(fmt.Sprintf("boot-vars-%s.fd", s.Profile))
+}
+
 func (s *State) GetPIDFile() string {
 	return s.getPath(fmt.Sprintf("vm-%s.pid", s.Profile))
 }

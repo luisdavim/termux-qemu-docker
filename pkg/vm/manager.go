@@ -19,6 +19,7 @@ import (
 	"github.com/luisdavim/termux-qemu-docker/pkg/utils"
 )
 
+// CheckAndDownloadImage ensures the Alpine cloud-init disk image is present locally, downloading it if necessary.
 func CheckAndDownloadImage(c *config.Config) error {
 	if _, err := os.Stat(c.VM.DiskPath); err == nil {
 		return nil
@@ -48,7 +49,7 @@ func CheckAndDownloadImage(c *config.Config) error {
 		if remErr := os.Remove(tempPath); remErr != nil && !os.IsNotExist(remErr) {
 			fmt.Printf("⚠️ Warning: failed to remove temporary download file: %v\n", remErr)
 		}
-		return fmt.Errorf("download failed: %v", err)
+		return fmt.Errorf("download failed: %w", err)
 	}
 
 	_ = os.MkdirAll(filepath.Dir(c.VM.DiskPath), 0o755)
@@ -61,6 +62,7 @@ func CheckAndDownloadImage(c *config.Config) error {
 	return cmd.Run()
 }
 
+// CreateSeedISO generates a Cloud-Init NoCloud ISO containing user-data, meta-data, and vendor-data.
 func CreateSeedISO(s *config.State) (string, error) {
 	tempDir, err := os.MkdirTemp("", "termux-qemu-docker-seed-*")
 	if err != nil {
@@ -130,6 +132,7 @@ func CreateSeedISO(s *config.State) (string, error) {
 	return isoPath, nil
 }
 
+// VerifyDockerHealth polls the Docker daemon's Unix socket to confirm it is responsive.
 func VerifyDockerHealth(s *config.State) bool {
 	httpClient := http.Client{
 		Timeout: 5 * time.Second,
@@ -153,6 +156,7 @@ func VerifyDockerHealth(s *config.State) bool {
 	return err == nil
 }
 
+// OrchestrateEnvironment performs post-boot setup, including waiting for Cloud-Init, provisioning, and mounting shared folders.
 func OrchestrateEnvironment(ctx context.Context, s *config.State) error {
 	fmt.Println("⏳ Synchronizing network handshake channels...")
 

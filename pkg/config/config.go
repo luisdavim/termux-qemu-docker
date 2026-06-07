@@ -10,14 +10,15 @@ import (
 
 type Config struct {
 	VM struct {
-		CPUs        int    `yaml:"cpus"`
-		Memory      string `yaml:"memory"`
-		BiosPath    string `yaml:"bios"`
-		DiskPath    string `yaml:"disk_path"`
-		DiskSizeGB  int    `yaml:"disk_size_gb"`
-		SSHPort     int    `yaml:"ssh_port"`
-		SSHUser     string `yaml:"ssh_user"`
-		SSHPassword string `yaml:"ssh_password"`
+		CPUs         int    `yaml:"cpus"`
+		Memory       string `yaml:"memory"`
+		BiosPath     string `yaml:"bios"`
+		BiosVarsPath string `yaml:"bios_vars"`
+		DiskPath     string `yaml:"disk_path"`
+		DiskSizeGB   int    `yaml:"disk_size_gb"`
+		SSHPort      int    `yaml:"ssh_port"`
+		SSHUser      string `yaml:"ssh_user"`
+		SSHPassword  string `yaml:"ssh_password"`
 	} `yaml:"vm"`
 
 	AlpineSetup struct {

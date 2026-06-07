@@ -84,6 +84,14 @@ func (c *Config) SetDefaults(profile, homeDir, prefix string) {
 		c.VM.BiosPath = fmt.Sprintf(filepath.Join(prefix, "/share/qemu/edk2-%s-code.fd"), c.AlpineSetup.Arch)
 	}
 
+	if c.VM.BiosVarsPath == "" {
+		arch := c.AlpineSetup.Arch
+		if arch == "aarch64" {
+			arch = "arm"
+		}
+		c.VM.BiosVarsPath = fmt.Sprintf(filepath.Join(prefix, "/share/qemu/edk2-%s-vars.fd"), arch)
+	}
+
 	if c.VM.DiskPath == "" {
 		configDir := GetBaseDir(homeDir)
 		if profile == "default" || profile == "" {

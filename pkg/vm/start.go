@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/luisdavim/termux-qemu-docker/pkg/config"
 )
@@ -67,14 +68,32 @@ func getQEMUCmd(s *config.State) string {
 }
 
 func StartQEMU(s *config.State, seedISO string) error {
+	machine := "virt"
+	netDevice := "virtio-net-device"
+	fsDevice := "virtio-9p-device"
+	if s.Cfg.AlpineSetup.Arch == "x86_64" {
+		machine = "q35"
+		netDevice = "virtio-net-pci"
+		fsDevice = "virtio-9p-pci"
+	}
+
 	args := []string{
-		"-M", "virt", "-cpu", "max", "-smp", strconv.Itoa(s.Cfg.VM.CPUs), "-m", s.Cfg.VM.Memory,
+		"-M", machine, "-cpu", "max", "-smp", strconv.Itoa(s.Cfg.VM.CPUs), "-m", s.Cfg.VM.Memory,
 		"-bios", s.Cfg.VM.BiosPath,
 		"-drive", fmt.Sprintf("if=virtio,file=%s,format=qcow2", s.Cfg.VM.DiskPath),
 		"-drive", fmt.Sprintf("if=virtio,file=%s,format=raw,readonly=on", seedISO),
 		"-netdev", fmt.Sprintf("user,id=n1,hostfwd=tcp::%d-:22", s.Cfg.VM.SSHPort),
-		"-device", "virtio-net-pci,netdev=n1", "-nographic",
+		"-device", fmt.Sprintf("%s,netdev=n1", netDevice), "-nographic",
 	}
+
+	// boot setup, replaces "-bios", s.Cfg.VM.BiosPath
+	// if err := utils.CopyFile(s.Cfg.VM.BiosVarsPath, s.GetBootVarsPath()); err != nil {
+	// 	return fmt.Errorf("failed to copy boot vars file: %w", err)
+	// }
+	// args = append(args, "-drive", fmt.Sprintf("if=pflash,format=raw,readonly=on,file=%s", s.Cfg.VM.BiosPath),
+	// 	"-drive", fmt.Sprintf("if=pflash,format=raw,file=%s", s.GetBootVarsPath()),
+	// 	"-fw_cfg", "opt/org.gnu.grub/config,string=set timeout=0\nset default=0\nboot",
+	// )
 
 	for i, m := range s.Cfg.Mounts {
 		if err := os.MkdirAll(m, 0o755); err != nil {
@@ -83,84 +102,66 @@ func StartQEMU(s *config.State, seedISO string) error {
 		tag := fmt.Sprintf("mount%d", i)
 		args = append(args,
 			"-fsdev", fmt.Sprintf("local,id=%s,path=%s,security_model=none", tag, m),
-			"-device", fmt.Sprintf("virtio-9p-pci,fsdev=%s,mount_tag=%s", tag, tag),
+			"-device", fmt.Sprintf("%s,fsdev=%s,mount_tag=%s", fsDevice, tag, tag),
 		)
 	}
 
-	qemuLogPath := s.GetLogPath()
-	qemuLog, err := os.OpenFile(qemuLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	pid, err := runInBackground(getQEMUCmd(s), s.GetPIDFile(), s.GetLogPath(), args...)
 	if err != nil {
-		return fmt.Errorf("failed to open QEMU log file: %w", err)
+		return fmt.Errorf("failed to start VM: %w", err)
 	}
 
-	qemuCmd := exec.Command(getQEMUCmd(s), args...)
-	qemuCmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
-	qemuCmd.Stdout, qemuCmd.Stderr = qemuLog, qemuLog
-
-	if err := qemuCmd.Start(); err != nil {
-		return fmt.Errorf("VM error: %w", err)
-	}
-
-	// Flag to track if startup was fully successful
-	startupSuccessful := false
-	defer func() {
-		if !startupSuccessful {
-			fmt.Println("⚠️ Startup failed. Cleaning up stale VM references...")
-			_ = qemuCmd.Process.Kill()
-			_ = os.Remove(s.GetPIDFile())
-		}
-	}()
-
-	if err := os.WriteFile(s.GetPIDFile(), []byte(strconv.Itoa(qemuCmd.Process.Pid)), 0o644); err != nil {
-		return fmt.Errorf("failed to write PID file: %w", err)
-	}
-
-	fmt.Printf("🚀 QEMU process started (PID: %d). Orchestrating environment...\n", qemuCmd.Process.Pid)
-	startupSuccessful = true
+	// avoid wasting resources by delaying the ssh poll
+	time.Sleep(30 * time.Second)
+	fmt.Printf("🚀 QEMU process started (PID: %d). Orchestrating environment...\n", pid)
 
 	return nil
 }
 
 func startTunnel(s *config.State) error {
-	pidFile := s.GetTunnelPIDFile()
-	if _, err := os.Stat(pidFile); err == nil {
-		return nil
-	}
-
-	logPath := s.GetTunnelLogPath()
-	log, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		return fmt.Errorf("failed to open Tunnel log file: %w", err)
-	}
-
 	slef, err := os.Executable()
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command(slef, "tunnel", "-p", s.Profile)
+
+	pid, err := runInBackground(slef, s.GetTunnelPIDFile(), s.GetTunnelLogPath(), "tunnel", "-p", s.Profile)
+	if err != nil {
+		return fmt.Errorf("failed to start tunnel: %w", err)
+	}
+
+	fmt.Printf("🚀 Tunnel process started (PID: %d).\n", pid)
+	return nil
+}
+
+func runInBackground(name, pidFile, logFile string, args ...string) (pid int, rerr error) {
+	if _, err := os.Stat(pidFile); err == nil {
+		return -1, nil
+	}
+
+	log, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return -1, fmt.Errorf("failed to open Tunnel log file: %w", err)
+	}
+
+	cmd := exec.Command(name, args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	cmd.Stdout, cmd.Stderr = log, log
 
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("tunnel error: %w", err)
+		return -1, fmt.Errorf("%s error: %w", name, err)
 	}
 
-	// Flag to track if startup was fully successful
-	startupSuccessful := false
 	defer func() {
-		if !startupSuccessful {
-			fmt.Println("⚠️ Startup failed. Cleaning up stale tunnel references...")
+		if rerr != nil {
+			fmt.Println("⚠️ Startup failed. Cleaning up stale references...")
 			_ = cmd.Process.Kill()
 			_ = os.Remove(pidFile)
 		}
 	}()
 
 	if err := os.WriteFile(pidFile, []byte(strconv.Itoa(cmd.Process.Pid)), 0o644); err != nil {
-		return fmt.Errorf("failed to write PID file: %w", err)
+		return -1, fmt.Errorf("failed to write PID file: %w", err)
 	}
 
-	startupSuccessful = true
-	fmt.Printf("🚀 Tunnel process started (PID: %d).\n", cmd.Process.Pid)
-
-	return nil
+	return cmd.Process.Pid, nil
 }

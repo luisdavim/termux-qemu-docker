@@ -93,7 +93,7 @@ func GetClient(ctx context.Context, s *config.State) (*ssh.Client, error) {
 				for {
 					select {
 					case <-ticker.C:
-						_, _, err := client.SendRequest("keepalive@openssh.com", true, nil)
+						_, _, err = client.SendRequest("keepalive@openssh.com", true, nil)
 						if err != nil {
 							return
 						}
@@ -108,7 +108,7 @@ func GetClient(ctx context.Context, s *config.State) (*ssh.Client, error) {
 		return err
 	})
 	if err != nil {
-		return nil, fmt.Errorf("core engine communication failed after 60 attempts: %w", err)
+		return nil, fmt.Errorf("core engine communication failed after several attempts: %w", err)
 	}
 
 	return client, nil

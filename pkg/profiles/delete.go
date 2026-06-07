@@ -41,6 +41,15 @@ func Delete(state *config.State) error {
 		}
 	}
 
+	// Delete boot vars
+	bootVars := state.GetBootVarsPath()
+	if _, err := os.Stat(bootVars); err == nil {
+		fmt.Printf("🗑️ Deleting boot vars: %s\n", bootVars)
+		if err := os.Remove(bootVars); err != nil {
+			fmt.Printf("❌ Failed to delete boot vars: %v\n", err)
+		}
+	}
+
 	// Delete SSH hosk key
 	hostKey := state.GetSSHHostKeyFile()
 	if _, err := os.Stat(hostKey); err == nil {

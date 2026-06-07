@@ -111,6 +111,7 @@ func StartConnForwarder(state *config.State, interval time.Duration) error {
 	return nil
 }
 
+// updatePortState persists the current mapping of active host listeners to the profile's port state file.
 func updatePortState(s *config.State, listeners map[string]net.Listener) {
 	mappings := []config.PortMapping{{
 		LocalAddress: fmt.Sprintf("127.0.0.1:%d", s.Cfg.VM.SSHPort),
@@ -133,6 +134,7 @@ func updatePortState(s *config.State, listeners map[string]net.Listener) {
 }
 
 // StreamVMPorts opens a long-lived SSH session to monitor active ports inside the VM.
+// It yields a map of active "port protocol" strings to the caller via a channel.
 func StreamVMPorts(ctx context.Context, client *ssh.Client, interval time.Duration) <-chan map[string]bool {
 	updates := make(chan map[string]bool)
 
