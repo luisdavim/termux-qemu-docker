@@ -22,7 +22,7 @@ builds:
       - android
       - linux
     goarch:
-      - aarch64
+      - arm64
       - amd64
     ignore:
       - goos: android
@@ -49,7 +49,6 @@ nfpms:
 archives:
   - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     formats:
-      - tar.gz
       - binary
 checksum:
   name_template: "checksums.txt"
