@@ -27,8 +27,12 @@ builds:
     ignore:
       - goos: android
         goarch: amd64
-      - goos: linux
-        goarch: arm64
+      - goos: android
+        goarch: arm
+      - goos: android
+        goarch: "386"
+      - goos: windows
+        goarch: arm
 
 nfpms:
   - id: termux-qemu-docker
@@ -41,32 +45,6 @@ nfpms:
     license: MIT
     formats:
       - termux.deb
-    dependencies:
-      - qemu-utils
-      - openssh
-      - libisoburn
-      - dosfstools
-    overrides:
-      arm64:
-        deb:
-          fields:
-            Architecture: aarch64
-        dependencies:
-          - qemu-utils
-          - openssh
-          - libisoburn
-          - dosfstools
-          - qemu-system-aarch64-headless
-      amd64:
-        deb:
-          fields:
-            Architecture: x86_64
-        dependencies:
-          - qemu-utils
-          - openssh
-          - libisoburn
-          - dosfstools
-          - qemu-system-x86_64-headless
 
 archives:
   - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
