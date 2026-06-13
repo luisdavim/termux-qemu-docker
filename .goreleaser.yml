@@ -22,7 +22,7 @@ builds:
       - android
       - linux
     goarch:
-      - arm64
+      - aarch64
       - amd64
     ignore:
       - goos: android
