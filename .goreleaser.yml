@@ -12,13 +12,38 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
-  - env:
+  - id: termux-qemu-docker
+    env:
       - CGO_ENABLED=0
     ldflags: -s -w -extldflags "-static"
     flags:
       - -trimpath
     goos:
       - android
+    goarch:
+      - amd64
+      - arm64
+      - arm
+
+nfpms:
+  - id: termux-qemu-docker
+    package_name: termux-qemu-docker
+    builds:
+      - termux-qemu-docker
+    maintainer: Luis Davim <luisdavim@users.noreply.github.com>
+    description: A lightweight profile-aware container VM manager for Termux
+    homepage: https://github.com/luisdavim/termux-qemu-docker
+    license: MIT
+    formats:
+      - termux.deb
+    dependencies:
+      - qemu-utils
+      - openssh
+      - libisoburn
+      - dosfstools
+      - docker
+      - "qemu-system-{{ if eq .Arch \"amd64\" }}x86_64{{ else if eq .Arch \"arm64\" }}aarch64{{ else }}{{ .Arch }}{{ end }}-headless"
+
 archives:
   - name_template: >-
       {{ .ProjectName }}_
