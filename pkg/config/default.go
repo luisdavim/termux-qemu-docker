@@ -36,12 +36,16 @@ func (c *Config) SetDefaults(profile, homeDir, prefix string) {
 		}
 	}
 
-	if c.AlpineSetup.Version == "" {
-		c.AlpineSetup.Version = "latest"
-		v, err := utils.GetLatestAlpineVersion(c.AlpineSetup.Mirror, c.AlpineSetup.Arch)
-		if err == nil {
+	if c.AlpineSetup.Version == "latest" {
+		if v, err := utils.GetLatestAlpineVersion(c.AlpineSetup.Mirror, c.AlpineSetup.Arch); err == nil {
 			c.AlpineSetup.Version = v
+		} else {
+			c.AlpineSetup.Version = ""
 		}
+	}
+
+	if c.AlpineSetup.Version == "" {
+		c.AlpineSetup.Version = "3.23.4"
 	}
 
 	if c.AlpineSetup.Timezone == "" {
