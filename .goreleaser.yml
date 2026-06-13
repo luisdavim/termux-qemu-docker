@@ -41,8 +41,7 @@ nfpms:
       - openssh
       - libisoburn
       - dosfstools
-      - docker
-      - "qemu-system-{{ if eq .Arch \"amd64\" }}x86_64{{ else if eq .Arch \"arm64\" }}aarch64{{ else }}{{ .Arch }}{{ end }}-headless"
+      - 'qemu-system-{{ if eq .Arch "amd64" }}x86_64{{ else if eq .Arch "arm64" }}aarch64{{ else }}{{ .Arch }}{{ end }}-headless'
 
 archives:
   - name_template: >-

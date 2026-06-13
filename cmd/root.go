@@ -64,6 +64,7 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.AddCommand(newTunnelCmd(state))
 	rootCmd.AddCommand(newLogsCmd(state))
 	rootCmd.AddCommand(newSSHCmd(state))
+	rootCmd.AddCommand(newDockerCmd(state))
 	rootCmd.AddCommand(newPortsCmd(state))
 
 	return rootCmd

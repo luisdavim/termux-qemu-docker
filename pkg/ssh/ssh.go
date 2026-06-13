@@ -115,6 +115,10 @@ func GetClient(ctx context.Context, s *config.State) (*ssh.Client, error) {
 }
 
 func Shell(s *config.State) error {
+	return RunInPty(s, "")
+}
+
+func RunInPty(s *config.State, cmd string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -173,8 +177,14 @@ func Shell(s *config.State) error {
 		}
 	}()
 
-	if err := session.Shell(); err != nil {
-		return fmt.Errorf("failed to start shell: %w", err)
+	if cmd == "" {
+		if err := session.Shell(); err != nil {
+			return fmt.Errorf("failed to start shell: %w", err)
+		}
+	} else {
+		if err := session.Start(cmd); err != nil {
+			return fmt.Errorf("failed to start %q: %w", cmd, err)
+		}
 	}
 
 	if err := session.Wait(); err != nil {

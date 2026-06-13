@@ -11,6 +11,7 @@ The idea is to provide a similar UX to [lima](github.com/lima-vm/lima) and [coli
 - **Profile Aware**: Create multiple isolated VM instances (e.g., `dev`, `prod`, `test`) with unique network ports.
 - **Cloud-Init Integration**: Automatic root password and SSH configuration on first boot.
 - **Folder Sync**: High-performance host directory sharing via Virtio-9p.
+- **docker and docker-compose wrapper**: Run `docker` and `docker-compose` commands directly on the VM
 
 ## 📋 Prerequisites
 
@@ -52,6 +53,14 @@ You can now use docker as if it were native:
 docker run --rm hello-world
 docker ps
 ```
+
+Alternatively, if you don't have the `docker` client installed on your device, you can run `docker` and `docker-compose` commands directly on the VM.
+
+```bash
+termux-qemu-docker docker run --name some-nginx -i --rm -p 8080:80 nginx
+```
+
+The ports exposed by the containers will still be available on the host device though the automatic port-forwarding.
 
 ## 📂 Folder Sharing
 

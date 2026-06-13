@@ -68,6 +68,7 @@ write_files:
 # # package_reboot: true
 packages:
   - docker
+  - docker-compose
   - containerd
   - socat
   - mount
