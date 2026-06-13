@@ -42,14 +42,10 @@ nfpms:
       - 'qemu-system-{{ if eq .Arch "amd64" }}x86_64{{ else if eq .Arch "arm64" }}aarch64{{ else }}{{ .Arch }}{{ end }}-headless'
 
 archives:
-  - name_template: >-
-      {{ .ProjectName }}_
-      {{- if eq .Os "Darwin" }}macos_
-      {{- else }}{{- tolower .Os }}_{{end}}
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
+  - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    formats:
+      - tar.gz
+      - binary
 checksum:
   name_template: "checksums.txt"
 snapshot:
