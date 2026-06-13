@@ -15,7 +15,7 @@ builds:
   - id: termux-qemu-docker
     env:
       - CGO_ENABLED=0
-    ldflags: -s -w -extldflags "-static"
+    ldflags: -s -w -X {{.ModulePath}}/cmd.version={{.Version}} -extldflags "-static"
     flags:
       - -trimpath
     goos:

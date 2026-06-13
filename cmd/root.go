@@ -55,6 +55,7 @@ func NewRootCmd() *cobra.Command {
 
 	rootCmd.PersistentFlags().StringVarP(&state.Profile, "profile", "p", "default", "The profile namespace directory framework to target")
 
+	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(newStartCmd(state))
 	rootCmd.AddCommand(newStopCmd(state))
 	rootCmd.AddCommand(newStatusCmd(state))
