@@ -48,7 +48,9 @@ nfpms:
       - dosfstools
     overrides:
       arm64:
-        arch: aarch64
+        deb:
+          fields:
+            Architecture: aarch64
         dependencies:
           - qemu-utils
           - openssh
@@ -56,7 +58,9 @@ nfpms:
           - dosfstools
           - qemu-system-aarch64-headless
       amd64:
-        arch: x86_64
+        deb:
+          fields:
+            Architecture: x86_64
         dependencies:
           - qemu-utils
           - openssh
