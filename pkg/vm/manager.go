@@ -46,7 +46,7 @@ func CheckAndDownloadImage(c *config.Config) error {
 		if remErr := os.Remove(tempPath); remErr != nil && !os.IsNotExist(remErr) {
 			fmt.Printf("⚠️ Warning: failed to remove temporary download file: %v\n", remErr)
 		}
-		return fmt.Errorf("download failed: %w", err)
+		return fmt.Errorf("download failed: %q %w", downloadURL, err)
 	}
 
 	_ = os.MkdirAll(filepath.Dir(c.VM.DiskPath), 0o755)
@@ -62,7 +62,7 @@ func CheckAndDownloadImage(c *config.Config) error {
 
 	fmt.Println("💿 Converting disk image to raw format for performance...")
 	rawPath := c.VM.DiskPath + ".raw"
-	convertCmd := exec.Command("qemu-img", "convert", "-f", "qcow2", "-O", "raw", c.VM.DiskPath, rawPath)
+	convertCmd := exec.Command("qemu-img", "convert", "-f", "qcow2", "-O", "raw", "-p", c.VM.DiskPath, rawPath)
 	if err := convertCmd.Run(); err != nil {
 		return fmt.Errorf("failed to convert image to raw: %w", err)
 	}
@@ -228,7 +228,7 @@ func OrchestrateEnvironment(ctx context.Context, s *config.State) error {
 		// Check if already mounted to avoid errors
 		checkCmd := fmt.Sprintf("mount | grep -q 'on %s type 9p'", m)
 		if err := ssh.RunCommand(client, checkCmd); err != nil {
-			mountCmd := fmt.Sprintf("doas mount -t 9p -o trans=virtio,version=9p2000.L,_netdev,rw,access=any %s %s", tag, m)
+			mountCmd := fmt.Sprintf("doas mount -t 9p -o trans=virtio,version=9p2000.L,_netdev,rw,access=any,cache=mmap,msize=131072 %s %s", tag, m)
 			if err := ssh.RunCommand(client, mountCmd); err != nil {
 				fmt.Printf("⚠️ Mount failed for %s: %v\n", m, err)
 			}

@@ -31,6 +31,8 @@ write_files:
 
       [grpc]
         address = "/run/containerd/containerd.sock"
+        max_recv_message_size = 16777216
+        max_send_message_size = 16777216
 
       [debug]
         level = "info"
@@ -51,7 +53,13 @@ write_files:
     content: |
       {
         "hosts": ["unix:///var/run/docker.sock"],
-        "containerd": "/run/containerd/containerd.sock"
+        "storage-driver": "overlay2",
+        "max-concurrent-downloads": 10,
+        "containerd": "/run/containerd/containerd.sock",
+        "log-opts": {
+           "max-size": "10m",
+           "max-file": "2"
+         }
       }
 
 # package_update: true

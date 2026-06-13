@@ -93,7 +93,7 @@ func StartQEMU(s *config.State, seedISO string) error {
 		// Storage allocation
 		"-object", "iothread,id=iothread0",
 		"-device", fmt.Sprintf("%s,drive=hd0,iothread=iothread0,num-queues=%d", blkDevice, s.Cfg.VM.CPUs),
-		"-drive", fmt.Sprintf("if=none,id=hd0,file=%s,format=raw,cache=unsafe,discard=on,aio=threads", s.Cfg.VM.DiskPath),
+		"-drive", fmt.Sprintf("if=none,id=hd0,file=%s,format=raw,cache=unsafe,discard=unmap,aio=threads", s.Cfg.VM.DiskPath),
 		"-drive", fmt.Sprintf("if=virtio,file=%s,format=raw,readonly=on", seedISO),
 		// Network & System Hardware Layout
 		"-netdev", fmt.Sprintf("user,id=n1,hostfwd=tcp::%d-:22", s.Cfg.VM.SSHPort),
@@ -115,7 +115,7 @@ func StartQEMU(s *config.State, seedISO string) error {
 	if s.Cfg.VM.UseKVM {
 		args = append(args, "-enable-kvm")
 	} else {
-		args = append(args, "-accel", "tcg,thread=multi,tb-size=256")
+		args = append(args, "-accel", "tcg,thread=multi,tb-size=256,split-wx=on")
 	}
 
 	for i, m := range s.Cfg.Mounts {
@@ -129,7 +129,7 @@ func StartQEMU(s *config.State, seedISO string) error {
 		)
 	}
 
-	pid, err := runInBackground(getQEMUCmd(s), s.GetPIDFile(), s.GetLogPath(), args...)
+	pid, err := runInBackground(getQEMUCmd(s), s.GetPIDFile(), s.GetLogPath(), 2*time.Second, args...)
 	if err != nil {
 		return fmt.Errorf("failed to start VM: %w", err)
 	}
@@ -147,7 +147,7 @@ func startTunnel(s *config.State) error {
 		return err
 	}
 
-	pid, err := runInBackground(slef, s.GetTunnelPIDFile(), s.GetTunnelLogPath(), "tunnel", "-p", s.Profile)
+	pid, err := runInBackground(slef, s.GetTunnelPIDFile(), s.GetTunnelLogPath(), time.Second, "tunnel", "-p", s.Profile)
 	if err != nil {
 		return fmt.Errorf("failed to start tunnel: %w", err)
 	}
@@ -156,7 +156,7 @@ func startTunnel(s *config.State) error {
 	return nil
 }
 
-func runInBackground(name, pidFile, logFile string, args ...string) (pid int, rerr error) {
+func runInBackground(name, pidFile, logFile string, delayCheck time.Duration, args ...string) (pid int, rerr error) {
 	if _, err := os.Stat(pidFile); err == nil {
 		return -1, nil
 	}
@@ -184,6 +184,12 @@ func runInBackground(name, pidFile, logFile string, args ...string) (pid int, re
 
 	if err := os.WriteFile(pidFile, []byte(strconv.Itoa(cmd.Process.Pid)), 0o644); err != nil {
 		return -1, fmt.Errorf("failed to write PID file: %w", err)
+	}
+
+	if delayCheck > 0 {
+		// the process may start and then exit with some error after some seconds
+		// so we wait a bit before checking the process state
+		time.Sleep(delayCheck)
 	}
 
 	if cmd.ProcessState != nil {
