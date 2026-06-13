@@ -13,7 +13,7 @@ var (
 func newVersionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
-		Short: "Show the version of your CLI tool",
+		Short: "Show the tool version",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Printf("%s %s\n", cmd.Parent().Name(), version)
 		},
