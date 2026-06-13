@@ -50,21 +50,6 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-brews:
-  - name: termux-qemu-docker
-    repository:
-      owner: luisdavim
-      name: termux-qemu-docker
-      branch: main
-    directory: Formula
-    description: "Watch a command and generate diffs from the output changes"
-    homepage: "https://github.com/luisdavim/termux-qemu-docker"
-    license: "MIT"
-    download_strategy: CurlDownloadStrategy
-    install: |
-      bin.install "termux-qemu-docker"
-    test: |
-      system "#{bin}/termux-qemu-docker", "-h"
 checksum:
   name_template: "checksums.txt"
 snapshot:
