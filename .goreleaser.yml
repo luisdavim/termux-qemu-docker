@@ -20,8 +20,15 @@ builds:
       - -trimpath
     goos:
       - android
+      - linux
     goarch:
       - arm64
+      - amd64
+    ignore:
+      - goos: android
+        goarch: amd64
+      - goos: linux
+        goarch: arm64
 
 nfpms:
   - id: termux-qemu-docker
