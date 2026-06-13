@@ -51,7 +51,7 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-homebrews:
+brews:
   - name: termux-qemu-docker
     repository:
       owner: luisdavim
