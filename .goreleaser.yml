@@ -23,12 +23,11 @@ builds:
     goarch:
       - amd64
       - arm64
-      - arm
 
 nfpms:
   - id: termux-qemu-docker
     package_name: termux-qemu-docker
-    builds:
+    ids:
       - termux-qemu-docker
     maintainer: Luis Davim <luisdavim@users.noreply.github.com>
     description: A lightweight profile-aware container VM manager for Termux
@@ -52,7 +51,7 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-brews:
+homebrews:
   - name: termux-qemu-docker
     repository:
       owner: luisdavim
