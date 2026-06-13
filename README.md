@@ -1,6 +1,6 @@
 # termux-qemu-docker
 
-A lightweight, profile-aware container VM manager for Termux. `termux-qemu-docker` automates the complex setup required to run Docker containers on Android by spawning an isolated Alpine Linux VM via QEMU and exposing the Docker daemon via a file socket to your Termux environment.
+A lightweight, profile-aware container VM manager for Termux. `termux-qemu-docker` automates the complex setup required to run Docker containers on Android without root, by spawning an isolated Alpine Linux VM via QEMU and exposing the Docker daemon via a file socket to your Termux environment.
 The idea is to provide a similar UX to [lima](github.com/lima-vm/lima) and [colima](github.com/abiosoft/colima) but for Android Termux.
 
 ## 🚀 Features
