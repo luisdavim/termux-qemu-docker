@@ -13,7 +13,7 @@ func newDockerCmd(state *config.State) *cobra.Command {
 	dockerCmd := &cobra.Command{
 		Use:                "docker",
 		Aliases:            []string{"docker-compose"},
-		Short:              "Start a SSH session on the Docker VM",
+		Short:              "Run docker or docker-compose commands",
 		DisableFlagParsing: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmdStr := cmd.CalledAs() + " " + strings.Join(args, " ")

@@ -14,6 +14,7 @@ func newSSHCmd(state *config.State) *cobra.Command {
 		Use:     "ssh",
 		Aliases: []string{"shell", "exec"},
 		Short:   "Start a SSH session on the Docker VM",
+		Long:    "Start a shell or run commands directly on the docker VM",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if cmd.CalledAs() == "exec" {
 				return ssh.RunInPty(state, strings.Join(args, " "))
