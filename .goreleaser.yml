@@ -46,7 +46,21 @@ nfpms:
       - openssh
       - libisoburn
       - dosfstools
-      - 'qemu-system-{{ if eq .Arch "amd64" }}x86_64{{ end }}{{ if eq .Arch "arm64" }}aarch64{{ end }}-headless'
+    overrides:
+      arm64:
+        dependencies:
+          - qemu-utils
+          - openssh
+          - libisoburn
+          - dosfstools
+          - qemu-system-aarch64-headless
+      amd64:
+        dependencies:
+          - qemu-utils
+          - openssh
+          - libisoburn
+          - dosfstools
+          - qemu-system-x86_64-headless
 
 archives:
   - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
