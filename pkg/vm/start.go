@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"runtime"
 	"strconv"
-	"syscall"
 	"time"
 
 	"github.com/luisdavim/termux-qemu-docker/pkg/config"
@@ -154,51 +152,4 @@ func startTunnel(s *config.State) error {
 
 	fmt.Printf("🚀 Tunnel process started (PID: %d).\n", pid)
 	return nil
-}
-
-func runInBackground(name, pidFile, logFile string, delayCheck time.Duration, args ...string) (pid int, rerr error) {
-	if pid, _ := readPIDFile(pidFile); pid > 0 {
-		if process, err := os.FindProcess(pid); err == nil {
-			if err = process.Signal(syscall.Signal(0)); err == nil {
-				return pid, nil
-			}
-		}
-	}
-
-	log, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		return -1, fmt.Errorf("failed to open Tunnel log file: %w", err)
-	}
-
-	cmd := exec.Command(name, args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
-	cmd.Stdout, cmd.Stderr = log, log
-
-	if err := cmd.Start(); err != nil {
-		return -1, fmt.Errorf("%s error: %w", name, err)
-	}
-
-	defer func() {
-		if rerr != nil {
-			fmt.Println("⚠️ Startup failed. Cleaning up stale references...")
-			_ = cmd.Process.Kill()
-			_ = os.Remove(pidFile)
-		}
-	}()
-
-	if err := os.WriteFile(pidFile, []byte(strconv.Itoa(cmd.Process.Pid)), 0o644); err != nil {
-		return -1, fmt.Errorf("failed to write PID file: %w", err)
-	}
-
-	if delayCheck > 0 {
-		// the process may start and then exit with some error after some seconds
-		// so we wait a bit before checking the process state
-		time.Sleep(delayCheck)
-	}
-
-	if cmd.ProcessState != nil {
-		return -1, fmt.Errorf("process terminated with %d", cmd.ProcessState.ExitCode())
-	}
-
-	return cmd.Process.Pid, nil
 }

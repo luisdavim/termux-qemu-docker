@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -13,29 +12,20 @@ import (
 )
 
 func Stop(s *config.State) error {
-	if err := stop("VM", s.GetPIDFile(), s.Profile); err != nil {
+	if err := stop("VM", s.GetPIDFile(), s.Profile, 30*time.Second); err != nil {
+		fmt.Printf("⚠️ %v\n", err)
+	}
+	if err := stop("Tunnel", s.GetTunnelPIDFile(), s.Profile, 5*time.Second); err != nil {
 		fmt.Printf("⚠️ %v\n", err)
 	}
 	if err := os.Remove(s.GetDockerSocketPath()); err != nil && !os.IsNotExist(err) {
 		fmt.Printf("⚠️ Failed to remove Docker socket: %v\n", err)
 	}
-	if err := stop("Tunnel", s.GetTunnelPIDFile(), s.Profile); err != nil {
-		fmt.Printf("⚠️ %v\n", err)
-	}
 	fmt.Printf("VM workspace profile '%s' completely stopped.\n", s.Profile)
 	return nil
 }
 
-func readPIDFile(pidFile string) (int, error) {
-	data, err := os.ReadFile(pidFile)
-	if err != nil {
-		return -1, err
-	}
-
-	return strconv.Atoi(string(data))
-}
-
-func stop(name, pidFile, profile string) error {
+func stop(name, pidFile, profile string, gracePeriod time.Duration) error {
 	pid, err := readPIDFile(pidFile)
 	if err != nil {
 		return fmt.Errorf("%s context profile namespace '%s' reports offline", name, profile)
@@ -44,7 +34,7 @@ func stop(name, pidFile, profile string) error {
 	process, err := os.FindProcess(pid)
 	if err == nil {
 		fmt.Printf("🛑 Terminating %s for workspace '%s' (PID %d)...\n", name, profile, pid)
-		if err := retry.WithTimeout(context.Background(), 10*time.Second, time.Second, 2*time.Second, func() error {
+		if err := retry.WithTimeout(context.Background(), gracePeriod, time.Second, 2*time.Second, func() error {
 			err := process.Signal(syscall.Signal(0))
 			if err == nil {
 				err = process.Signal(syscall.SIGTERM)
