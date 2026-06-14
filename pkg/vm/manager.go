@@ -228,7 +228,7 @@ func OrchestrateEnvironment(ctx context.Context, s *config.State) error {
 		// Check if already mounted to avoid errors
 		checkCmd := fmt.Sprintf("mount | grep -q 'on %s type 9p'", m)
 		if err := ssh.RunCommand(client, checkCmd); err != nil {
-			mountCmd := fmt.Sprintf("doas mount -t 9p -o trans=virtio,version=9p2000.L,_netdev,rw,access=any,cache=mmap,msize=131072 %s %s", tag, m)
+			mountCmd := fmt.Sprintf("doas mount -t 9p -o trans=virtio,version=9p2000.L,_netdev,rw,access=any,cache=mmap,msize=131072,uid=%s,gid=docker %s %s", s.Cfg.VM.SSHUser, tag, m)
 			if err := ssh.RunCommand(client, mountCmd); err != nil {
 				fmt.Printf("⚠️ Mount failed for %s: %v\n", m, err)
 			}

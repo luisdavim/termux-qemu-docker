@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -17,6 +19,9 @@ func newDockerCmd(state *config.State) *cobra.Command {
 		DisableFlagParsing: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmdStr := cmd.CalledAs() + " " + strings.Join(args, " ")
+			if cwd, _ := os.Getwd(); cwd != "" {
+				cmdStr = fmt.Sprintf(`doas sh -c "cd %s || true; %s"`, cwd, cmdStr)
+			}
 			return ssh.RunInPty(state, cmdStr)
 		},
 	}

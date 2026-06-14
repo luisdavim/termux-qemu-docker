@@ -124,7 +124,7 @@ func StartQEMU(s *config.State, seedISO string) error {
 		}
 		tag := fmt.Sprintf("mount%d", i)
 		args = append(args,
-			"-fsdev", fmt.Sprintf("local,id=%s,path=%s,security_model=none", tag, m),
+			"-fsdev", fmt.Sprintf("local,id=%s,path=%s,security_model=mapped-xattr", tag, m),
 			"-device", fmt.Sprintf("%s,fsdev=%s,mount_tag=%s", fsDevice, tag, tag),
 		)
 	}
