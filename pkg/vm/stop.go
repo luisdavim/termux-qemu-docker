@@ -26,25 +26,40 @@ func Stop(s *config.State) error {
 	return nil
 }
 
-func stop(name, pidFile, profile string) error {
+func readPIDFile(pidFile string) (int, error) {
 	data, err := os.ReadFile(pidFile)
+	if err != nil {
+		return -1, err
+	}
+
+	return strconv.Atoi(string(data))
+}
+
+func stop(name, pidFile, profile string) error {
+	pid, err := readPIDFile(pidFile)
 	if err != nil {
 		return fmt.Errorf("%s context profile namespace '%s' reports offline", name, profile)
 	}
 
-	pid, _ := strconv.Atoi(string(data))
 	process, err := os.FindProcess(pid)
 	if err == nil {
 		fmt.Printf("🛑 Terminating %s for workspace '%s' (PID %d)...\n", name, profile, pid)
-		if err := process.Signal(syscall.SIGTERM); err != nil && err != os.ErrProcessDone && err != os.ErrNoHandle {
-			fmt.Printf("⚠️ Failed to send SIGTERM to %s (PID %d): %v\n", name, pid, err)
-		}
-
 		if err := retry.WithTimeout(context.Background(), 10*time.Second, time.Second, 2*time.Second, func() error {
-			return process.Signal(syscall.Signal(0))
-		}); err != nil && err != os.ErrProcessDone && err != os.ErrNoHandle {
-			if err := process.Kill(); err != nil && err != os.ErrProcessDone {
-				fmt.Printf("⚠️ Failed to  stop process: %v\n", err)
+			err := process.Signal(syscall.Signal(0))
+			if err == nil {
+				err = process.Signal(syscall.SIGTERM)
+			}
+			if err == nil {
+				return fmt.Errorf("process %d still exists", pid)
+			}
+			if err != os.ErrProcessDone && err != os.ErrNoHandle {
+				return err
+			}
+			return nil
+		}); err != nil {
+			if err := process.Kill(); err != nil {
+				fmt.Printf("⚠️ Failed to  stop %s process: %v\n", name, err)
+				return err
 			}
 		}
 	}

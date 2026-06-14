@@ -157,8 +157,12 @@ func startTunnel(s *config.State) error {
 }
 
 func runInBackground(name, pidFile, logFile string, delayCheck time.Duration, args ...string) (pid int, rerr error) {
-	if _, err := os.Stat(pidFile); err == nil {
-		return -1, nil
+	if pid, _ := readPIDFile(pidFile); pid > 0 {
+		if process, err := os.FindProcess(pid); err == nil {
+			if err = process.Signal(syscall.Signal(0)); err == nil {
+				return pid, nil
+			}
+		}
 	}
 
 	log, err := os.OpenFile(logFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
