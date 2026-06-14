@@ -29,8 +29,26 @@ write_files:
       root = "/var/lib/containerd"
       state = "/run/containerd"
 
+      disabled_plugins = [
+        # Disables Kubernetes interface
+        "io.containerd.grpc.v1.cri",
+
+        # Disables storage drivers unsupported by the VM disk image layout
+        "io.containerd.snapshotter.v1.btrfs",
+        "io.containerd.snapshotter.v1.zfs",
+        "io.containerd.snapshotter.v1.devmapper",
+        "io.containerd.snapshotter.v1.aufs",
+
+        # Disables cloud/bare-metal systems that waste CPU cycles inside QEMU
+        "io.containerd.monitor.v1.cgroups",
+        "io.containerd.internal.v1.tracing",
+        "io.containerd.nri.v1.nri",
+        "io.containerd.gc.v1.scheduler"
+      ]
+
       [grpc]
         address = "/run/containerd/containerd.sock"
+        tcp_address = ""
         max_recv_message_size = 16777216
         max_send_message_size = 16777216
 
@@ -47,7 +65,10 @@ write_files:
           [plugins."io.containerd.cri.v1.runtime".cni]
             bin_dirs = ["/usr/libexec/cni"]
 
-      disabled_plugins = ["io.containerd.snapshotter.v1.btrfs", "io.containerd.snapshotter.v1.zfs", "io.containerd.snapshotter.v1.devmapper"]
+        [plugins."io.containerd.grpc.v1.cri"]
+          stream_server_address = "/run/containerd/containerd-stream.sock"
+          stream_server_port = "0"
+          disable_tcp_service = true
 
   - path: /etc/docker/daemon.json
     content: |
