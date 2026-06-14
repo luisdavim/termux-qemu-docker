@@ -18,17 +18,21 @@ func readPIDFile(pidFile string) (int, error) {
 	return strconv.Atoi(string(data))
 }
 
-func isRunning(pidFile string) (int, error) {
-	var (
-		pid int
-		err error
-	)
+func findProcess(pidFile string) (*os.Process, error) {
+	pid, err := readPIDFile(pidFile)
+	if err != nil {
+		return nil, err
+	}
 
-	if pid, err = readPIDFile(pidFile); pid > 0 {
-		if process, _ := os.FindProcess(pid); process != nil {
-			if err = process.Signal(syscall.Signal(0)); err == nil {
-				return pid, nil
-			}
+	return os.FindProcess(pid)
+}
+
+func isRunning(pidFile string) (int, error) {
+	var err error
+
+	if process, _ := findProcess(pidFile); process != nil {
+		if err = process.Signal(syscall.Signal(0)); err == nil {
+			return process.Pid, nil
 		}
 	}
 
@@ -76,7 +80,7 @@ func runInBackground(name, pidFile, logFile string, delayCheck time.Duration, ar
 	}
 
 	if _, err := isRunning(pidFile); err != nil {
-		return -1, fmt.Errorf("%s process failed: %w", name, err)
+		return -1, fmt.Errorf("%s prematurely terminated: %w", name, err)
 	}
 
 	return cmd.Process.Pid, nil
