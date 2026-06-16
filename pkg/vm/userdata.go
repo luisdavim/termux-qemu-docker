@@ -40,10 +40,8 @@ write_files:
         "io.containerd.snapshotter.v1.aufs",
 
         # Disables cloud/bare-metal systems that waste CPU cycles inside QEMU
-        "io.containerd.monitor.v1.cgroups",
         "io.containerd.internal.v1.tracing",
         "io.containerd.nri.v1.nri",
-        "io.containerd.gc.v1.scheduler"
       ]
 
       [grpc]
@@ -95,9 +93,14 @@ packages:
   - mount
   - linux-virt
 
+mounts:
+  - [ swap, null ]
 runcmd:
   - 'echo 1 > /proc/sys/net/ipv4/ip_forward'
   - 'echo 1 > /proc/sys/fs/may_detach_mounts'
+  - swapoff -a
+  - sed -i '/swap/d' /etc/fstab
+  - rc-update del swap default
   - 'rc-update add cgroups default'
   - 'rc-service cgroups start'
   - 'rc-update add containerd default'

@@ -74,6 +74,9 @@ func StartQEMU(s *config.State, seedISO string) error {
 	fsDevice := "virtio-9p-pci"
 	rngDevice := "virtio-rng-pci"
 	cpu := "max"
+	if s.Cfg.AlpineSetup.Arch == "aarch64" {
+		cpu = "max,pauth-impdef=on"
+	}
 
 	if s.Cfg.AlpineSetup.Arch == "x86_64" {
 		machine = "q35"

@@ -57,7 +57,10 @@ func (c *Config) SetDefaults(profile, homeDir, prefix string) {
 	}
 
 	if c.VM.CPUs == 0 {
-		c.VM.CPUs = 2
+		c.VM.CPUs = utils.NumCPU() / 2
+		if c.VM.CPUs == 0 {
+			c.VM.CPUs = 2
+		}
 	}
 	if c.VM.Memory == "" {
 		c.VM.Memory = "2048"
