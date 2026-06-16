@@ -116,7 +116,7 @@ func StartQEMU(s *config.State, seedISO string) error {
 	if s.Cfg.VM.UseKVM {
 		args = append(args, "-enable-kvm")
 	} else {
-		args = append(args, "-accel", "tcg,thread=multi,tb-size=256,split-wx=on")
+		args = append(args, "-accel", "tcg,thread=multi,tb-size=512,split-wx=on")
 	}
 
 	for i, m := range s.Cfg.Mounts {

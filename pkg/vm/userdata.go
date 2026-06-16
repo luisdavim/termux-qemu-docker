@@ -96,6 +96,7 @@ packages:
 mounts:
   - [ swap, null ]
 runcmd:
+  - 'sed -i "s/^#rc_parallel=.*/rc_parallel=\"YES\"/" /etc/rc.conf'
   - 'echo 1 > /proc/sys/net/ipv4/ip_forward'
   - 'echo 1 > /proc/sys/fs/may_detach_mounts'
   - swapoff -a
