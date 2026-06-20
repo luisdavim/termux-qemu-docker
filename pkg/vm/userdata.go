@@ -95,7 +95,16 @@ packages:
 
 mounts:
   - [ swap, null ]
+  - [ /dev/vda1, / , ext4, "defaults,noatime", "0", "1" ]
+mount_default_fields: [None, None, "auto", "defaults,noatime,nofail", "0", "2"]
+
 runcmd:
+  - sed -i 's/defaults/defaults,noatime/' /etc/fstab
+  - echo "none" > /sys/block/vda/queue/scheduler
+  - mkdir -p /etc/local.d
+  - echo "echo none > /sys/block/vda/queue/scheduler" > /etc/local.d/ioscheduler.start
+  - chmod +x /etc/local.d/ioscheduler.start
+  - rc-update add local default
   - 'sed -i "s/^#rc_parallel=.*/rc_parallel=\"YES\"/" /etc/rc.conf'
   - 'echo 1 > /proc/sys/net/ipv4/ip_forward'
   - 'echo 1 > /proc/sys/fs/may_detach_mounts'

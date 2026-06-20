@@ -38,7 +38,7 @@ func CheckAndDownloadImage(c *config.Config) error {
 	versionParts := strings.Split(c.AlpineSetup.Version, ".")
 	majorMinor := fmt.Sprintf("v%s.%s", versionParts[0], versionParts[1])
 	archSuffix := "uefi"
-	downloadURL := fmt.Sprintf("%s/%s/releases/cloud/nocloud_alpine-%s-%s-%s-%s-r0.qcow2",
+	downloadURL := fmt.Sprintf("%s/%s/releases/cloud/generic_alpine-%s-%s-%s-%s-r0.qcow2",
 		c.AlpineSetup.Mirror, majorMinor, c.AlpineSetup.Version, c.AlpineSetup.Arch, archSuffix, c.AlpineSetup.Bootstrap)
 
 	tempPath := c.VM.DiskPath + ".tmp"

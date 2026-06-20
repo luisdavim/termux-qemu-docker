@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"strconv"
 	"time"
 
 	"github.com/luisdavim/termux-qemu-docker/pkg/config"
@@ -86,7 +85,7 @@ func StartQEMU(s *config.State, seedISO string) error {
 	}
 
 	args := []string{
-		"-M", machine, "-cpu", cpu, "-smp", strconv.Itoa(s.Cfg.VM.CPUs), "-m", s.Cfg.VM.Memory, "-nographic",
+		"-M", machine, "-cpu", cpu, "-smp", fmt.Sprintf("cpus=%d,cores=1,threads=1", s.Cfg.VM.CPUs), "-m", s.Cfg.VM.Memory, "-nographic",
 		// Drop QEMU & UEFI Firmware delays down to 0ms
 		"-boot", "menu=on,splash-time=0",
 		"-fw_cfg", "name=opt/org.tianocore.BdsSkipSlightDelay,string=1",
@@ -125,7 +124,7 @@ func StartQEMU(s *config.State, seedISO string) error {
 		}
 		tag := fmt.Sprintf("mount%d", i)
 		args = append(args,
-			"-fsdev", fmt.Sprintf("local,id=%s,path=%s,security_model=mapped-xattr", tag, m),
+			"-fsdev", fmt.Sprintf("local,id=%s,path=%s,security_model=none", tag, m),
 			"-device", fmt.Sprintf("%s,fsdev=%s,mount_tag=%s", fsDevice, tag, tag),
 		)
 	}

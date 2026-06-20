@@ -45,7 +45,7 @@ func (c *Config) SetDefaults(profile, homeDir, prefix string) {
 	}
 
 	if c.AlpineSetup.Version == "" {
-		c.AlpineSetup.Version = "3.23.4"
+		c.AlpineSetup.Version = "3.24.1"
 	}
 
 	if c.AlpineSetup.Timezone == "" {

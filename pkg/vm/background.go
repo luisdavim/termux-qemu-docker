@@ -32,7 +32,7 @@ func isRunning(pidFile string) (int, error) {
 
 	if process, _ := findProcess(pidFile); process != nil {
 		if err = process.Signal(syscall.Signal(0)); err == nil {
-			return process.Pid, nil
+			return process.Pid, err
 		}
 	}
 
