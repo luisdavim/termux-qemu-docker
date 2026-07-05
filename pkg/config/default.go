@@ -56,11 +56,11 @@ func (c *Config) SetDefaults(profile, homeDir, prefix string) {
 		c.AlpineSetup.Bootstrap = "tiny"
 	}
 
-	if c.VM.CPUs == 0 {
+	if c.VM.CPUs < 0 {
 		c.VM.CPUs = utils.NumCPU() / 2
-		if c.VM.CPUs == 0 {
-			c.VM.CPUs = 2
-		}
+	}
+	if c.VM.CPUs < 1 {
+		c.VM.CPUs = 1
 	}
 	if c.VM.Memory == "" {
 		c.VM.Memory = "2048"

@@ -85,7 +85,8 @@ func StartQEMU(s *config.State, seedISO string) error {
 	}
 
 	args := []string{
-		"-M", machine, "-cpu", cpu, "-smp", fmt.Sprintf("cpus=%d,cores=1,threads=1", s.Cfg.VM.CPUs), "-m", s.Cfg.VM.Memory, "-nographic",
+		"-M", machine, "-cpu", cpu,
+		"-m", s.Cfg.VM.Memory,
 		// Drop QEMU & UEFI Firmware delays down to 0ms
 		"-boot", "menu=on,splash-time=0",
 		"-fw_cfg", "name=opt/org.tianocore.BdsSkipSlightDelay,string=1",
@@ -100,6 +101,13 @@ func StartQEMU(s *config.State, seedISO string) error {
 		"-device", fmt.Sprintf("%s,netdev=n1", netDevice),
 		"-object", "rng-random,id=rng0,filename=/dev/urandom",
 		"-device", fmt.Sprintf("%s,rng=rng0", rngDevice),
+		"-nographic", "-nodefaults",
+	}
+
+	if s.Cfg.VM.CPUs > 1 {
+		args = append(args,
+			"-smp", fmt.Sprintf("cpus=%d,cores=1,threads=1", s.Cfg.VM.CPUs),
+		)
 	}
 
 	// boot setup, replaces "-bios", s.Cfg.VM.BiosPath
