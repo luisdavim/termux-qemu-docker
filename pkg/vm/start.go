@@ -67,7 +67,7 @@ func getQEMUCmd(s *config.State) string {
 }
 
 func StartQEMU(s *config.State, seedISO string) error {
-	machine := "virt"
+	machine := "virt,gic-version=3"
 	netDevice := "virtio-net-pci"
 	blkDevice := "virtio-blk-pci"
 	fsDevice := "virtio-9p-pci"
@@ -94,11 +94,11 @@ func StartQEMU(s *config.State, seedISO string) error {
 		// Storage allocation
 		"-object", "iothread,id=iothread0",
 		"-device", fmt.Sprintf("%s,drive=hd0,iothread=iothread0,num-queues=%d", blkDevice, s.Cfg.VM.CPUs),
-		"-drive", fmt.Sprintf("if=none,id=hd0,file=%s,format=raw,cache=unsafe,discard=unmap,aio=threads", s.Cfg.VM.DiskPath),
+		"-drive", fmt.Sprintf("if=none,id=hd0,file=%s,format=raw,cache=unsafe,discard=unmap,detect-zeroes=unmap,aio=threads", s.Cfg.VM.DiskPath),
 		"-drive", fmt.Sprintf("if=virtio,file=%s,format=raw,readonly=on", seedISO),
 		// Network & System Hardware Layout
-		"-netdev", fmt.Sprintf("user,id=n1,hostfwd=tcp::%d-:22", s.Cfg.VM.SSHPort),
-		"-device", fmt.Sprintf("%s,netdev=n1", netDevice),
+		"-netdev", fmt.Sprintf("user,id=n1,ipv6=off,hostfwd=tcp::%d-:22", s.Cfg.VM.SSHPort),
+		"-device", fmt.Sprintf("%s,netdev=n1,romfile=", netDevice),
 		"-object", "rng-random,id=rng0,filename=/dev/urandom",
 		"-device", fmt.Sprintf("%s,rng=rng0", rngDevice),
 		"-nographic", "-nodefaults",
